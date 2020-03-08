@@ -1,0 +1,20 @@
+{
+  "name": "@pestras/space",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "types": "index.ts",
+  "scripts": {
+    "tsc": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^3.4.3"
+  },
+  "dependencies": {
+    "rxjs": "^6.5.4",
+    "tools-box": "^0.1.36"
+  }
+}

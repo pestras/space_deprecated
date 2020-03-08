@@ -1,14 +1,29 @@
 {
   "name": "@pestras/space",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.2",
+  "description": "Drawing library based on html canvas apis",
   "main": "index.js",
   "types": "index.ts",
   "scripts": {
     "tsc": "tsc"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "canvas",
+    "javascript",
+    "typescript",
+    "drawing",
+    "observables",
+    "rxjs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pestras/space.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pestras/space/issues"
+  },
+  "homepage": "https://github.com/pestras/space#readme",
+  "author": "Pestras",
   "license": "ISC",
   "devDependencies": {
     "typescript": "^3.4.3"

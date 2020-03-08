@@ -110,6 +110,7 @@ export class Img extends Shape {
     this._image.src = src;
   }
 
+  get size() { return this.sizeBS.getValue(); }
   set size(val: any) {
     this._flexSize = val.clone();
     this.update();

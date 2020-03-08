@@ -115,7 +115,7 @@ export class TextBox extends Shape {
     this.update();
   }
 
-  setSize(val: any) {
+  setSize(val: FlexSize) {
     this._flexSize = val.clone();
     this.update();
   }

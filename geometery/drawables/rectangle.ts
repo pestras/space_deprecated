@@ -22,6 +22,7 @@ export class Rectangle extends Shape {
     ];
   }
 
+  get size() { return this.sizeBS.getValue(); }
   set size(val: Size) {
     this.sizeBS.next(val);
     this.update();

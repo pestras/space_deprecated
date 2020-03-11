@@ -128,6 +128,9 @@ export class TextBox extends Shape {
     if (!this.visible) return;
     
     state.ctx.save();
+
+    if (this._clip) this._clip.makeClip();
+    
     state.ctx.beginPath();
 
     state.ctx.font = `${this._style.fontSize}px ${this._style.fontFamily}`;

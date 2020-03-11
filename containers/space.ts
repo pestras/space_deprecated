@@ -1,5 +1,5 @@
 import { Layer } from './layer';
-import { state } from '../state';
+import { state, Style } from '../state';
 import { Vec } from '../geometery/measure';
 import { MouseCoords } from '../geometery/mouse-point';
 
@@ -10,6 +10,7 @@ export interface SpaceOptions {
 
 export class Space {
   protected layers: Layer[] = [];
+  protected fixedLayers: Layer[] = [];
   protected animationHandle: number;
   protected mousedown: Vec = null;
   protected ctrlBtnPress = false;
@@ -20,8 +21,9 @@ export class Space {
     bgc: '#F6F6F6'
   }
 
-  constructor(canvasId: string, options: SpaceOptions = {}) {
+  constructor(canvasId: string, options: SpaceOptions = {}, style: Style = {}) {
     Object.assign(this.options, options);
+    Object.assign(state.style, style);
     state.canvas = <HTMLCanvasElement>document.getElementById(canvasId);
     if (!state.canvas) return;
     state.ctx = state.canvas.getContext('2d');
@@ -39,6 +41,8 @@ export class Space {
   }
 
   private triggerEvent(event: string, e: MouseEvent) {
+    for (let i = this.fixedLayers.length - 1; i > -1; i--)
+      if (this.fixedLayers[i].onEvent(event, e)) return;
     for (let i = this.layers.length - 1; i > -1; i--)
       if (this.layers[i].onEvent(event, e)) return;
   }
@@ -71,58 +75,104 @@ export class Space {
 
   get rendering() { return !!this.animationHandle; }
   get panMode() { return state.panMode; }
-  set panMode(val: boolean) { state.panMode = val; }
+  set panMode(val: boolean) {
+    state.panMode = val;
+    if (val) state.zoomMode = false;
+  }
   get zoomMode() { return state.zoomMode; }
-  set zoomMode(val: boolean) { state.zoomMode = val; }
+  set zoomMode(val: boolean) { 
+    state.zoomMode = val;
+    if (val) state.panMode = false;
+  }
 
-  addLayer(layer: Layer) {
-    if (this.layers.indexOf(layer) === -1) this.layers.push(layer);
+  addLayer(layer: Layer, fixed = false) {
+    layer.fixed = fixed;
+    if (fixed) {
+      if (this.fixedLayers.indexOf(layer) === -1) this.fixedLayers.push(layer);
+    } else {
+      if (this.layers.indexOf(layer) === -1) this.layers.push(layer);
+    }
   }
 
   removeLayer(layer: Layer) {
-    let index = this.layers.indexOf(layer);
+    if (layer.fixed) {
+      let index = this.fixedLayers.indexOf(layer);
+      if (index > -1) {
+        layer.destroy();
+        this.fixedLayers.splice(index, 1);
+      }
 
-    if (index > -1) {
-      layer.destroy();
-      this.layers.splice(index, 1);
+    } else {
+      let index = this.layers.indexOf(layer);
+      if (index > -1) {
+        layer.destroy();
+        this.layers.splice(index, 1);
+      }
     }
   }
 
   clear() {
     for (let layer of this.layers) layer.destroy();
     this.layers = [];
+    for (let layer of this.fixedLayers) layer.destroy();
+    this.fixedLayers = [];
   }
 
   forward(layer: Layer) {
-    let index = this.layers.indexOf(layer);
+    if (layer.fixed) {
+      let index = this.fixedLayers.indexOf(layer);
+      if (index > -1 && index < this.fixedLayers.length - 1) this.layers.splice(index, 2, this.layers[index + 1], this.layers[index]);
 
-    if (index > -1 && index < this.layers.length - 1)
-      this.layers.splice(index, 2, this.layers[index + 1], this.layers[index]);
+    } else {
+      let index = this.layers.indexOf(layer);
+      if (index > -1 && index < this.layers.length - 1) this.layers.splice(index, 2, this.layers[index + 1], this.layers[index]);
+    }
+
   }
 
   tofront(layer: Layer) {
-    let index = this.layers.indexOf(layer);
+    if (layer.fixed) {
+      let index = this.fixedLayers.indexOf(layer);
+      if (index > -1 && index < this.fixedLayers.length - 1) {
+        this.fixedLayers.splice(index, 1);
+        this.fixedLayers.push(layer);
+      }
 
-    if (index > -1 && index < this.layers.length - 1) {
-      this.layers.splice(index, 1);
-      this.layers.push(layer);
+    } else {
+      let index = this.layers.indexOf(layer);
+      if (index > -1 && index < this.layers.length - 1) {
+        this.layers.splice(index, 1);
+        this.layers.push(layer);
+      }
     }
   }
 
   backward(layer: Layer) {
-    let index = this.layers.indexOf(layer);
+    if (layer.fixed) {
+      let index = this.fixedLayers.indexOf(layer);
+      if (index > 0) this.fixedLayers.splice(index - 1, 2, this.fixedLayers[index], this.fixedLayers[index - 1]);
 
-    if (index > 0)
-      this.layers.splice(index - 1, 2, this.layers[index], this.layers[index - 1]);
+    } else {
+      let index = this.layers.indexOf(layer);
+      if (index > 0) this.layers.splice(index - 1, 2, this.layers[index], this.layers[index - 1]);
+    }
   }
 
   toback(layer: Layer) {
-    let index = this.layers.indexOf(layer);
+    if (layer.fixed) {
+      let index = this.fixedLayers.indexOf(layer);
+      if (index > 0) {
+        this.fixedLayers.splice(index, 1);
+        this.fixedLayers.unshift(layer);
+      }
 
-    if (index > 0) {
-      this.layers.splice(index, 1);
-      this.layers.unshift(layer);
-    }
+    } else {
+      let index = this.layers.indexOf(layer);
+      if (index > 0) {
+        this.layers.splice(index, 1);
+        this.layers.unshift(layer);
+      }
+    }    
   }
 
   protected drawAxis() {
@@ -130,7 +180,7 @@ export class Space {
     state.ctx.beginPath();
     state.ctx.fillStyle = 'transparent';
     state.ctx.strokeStyle = "#EEEEEE";
-    state.ctx.lineWidth = 1;
+    state.ctx.lineWidth = 1 / state.scale;
     state.ctx.moveTo(-100000, 0);
     state.ctx.lineTo(100000, 0);
     state.ctx.closePath();
@@ -142,7 +192,7 @@ export class Space {
     state.ctx.stroke();
     state.ctx.lineWidth = 0;
     state.ctx.fillStyle = '#CCCCCC';
-    state.ctx.arc(0, 0, 2, 0, 2 * Math.PI);
+    state.ctx.arc(0, 0, 2 / state.scale, 0, 2 * Math.PI);
     state.ctx.closePath();
     state.ctx.fill();
     state.ctx.restore();
@@ -161,6 +211,7 @@ export class Space {
     if (this.options.axis) this.drawAxis();
     for (let layer of this.layers) layer.draw();
     state.ctx.restore();
+    for (let layer of this.fixedLayers) layer.draw();
   }
 
   protected draw(tick: number) {

@@ -146,6 +146,7 @@ export class Img extends Shape {
     if (!this.visible || !this._loaded) return;
 
     state.ctx.save();
+    if (this._clip) this._clip.makeClip();
     this.make();
     state.ctx.clip(this._path);
     state.ctx.beginPath();

@@ -1,23 +1,29 @@
 import { Shape } from '../shape';
-import { Vec } from '../measure';
+import { Vec, FlexSize, Size } from '../measure';
 import { state } from '../../state';
 
 export class Box extends Shape {
   protected _shapes: Shape[] = [];
   protected _padding: [number, number, number, number] = [0, 0, 0, 0];
+  protected _flexSize: FlexSize;
 
-  constructor(position: Vec) {
+  constructor(position: Vec, size = new FlexSize('auto', 'auto')) {
     super();
 
+    this._flexSize = size;
     this.pos = position;
   }
 
   update() {
-    let minVecs = this._shapes.map(shape => Vec.min(...shape.corners));
     let maxVecs = this._shapes.map(shape => Vec.max(...shape.corners));
-    let min = Vec.min(...minVecs);
     let max = Vec.max(...maxVecs);
-    let size = min.getXYDistanceFrom(max);
+    let size: Size;
+
+    if (this._flexSize.w !== 'auto' && this._flexSize.h !== 'auto') size = this._flexSize.clone() as any;
+    else if (this._flexSize.w !== 'auto') size = new Size(this._flexSize.w, this.absPos.verDistanceFrom(max));
+    else if (this._flexSize.h !== 'auto') size = new Size(this.absPos.horDistanceFrom(max), this._flexSize.h);
+    else size = this.absPos.getXYDistanceFrom(max);
+    
     this.sizeBS.next(size);
     this._corners = [
       this.absPos,
@@ -78,10 +84,6 @@ export class Box extends Shape {
       this._path.closePath();
 
     } else {
-      console.log(this._corners[0].x - this._padding[3],
-        this._corners[0].y - this._padding[0],
-        size.w + this._padding[1],
-        size.h + this._padding[2])
       this._path.rect(
         this._corners[0].x - this._padding[3],
         this._corners[0].y - this._padding[0],

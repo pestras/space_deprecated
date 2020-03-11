@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators';
 import { MouseCoords } from './mouse-point';
 
 export abstract class Shape {
+  protected _fixed: boolean;
   protected _subscriptions: Subscription[] = [];
   protected _attachSub: Subscription;
   protected _attachDestroySub: Subscription;
@@ -64,15 +65,19 @@ export abstract class Shape {
   constructor() {
     this.drag$.subscribe(e => {
       if (!this.draggable) return;
-      this.pos = new MouseCoords(e.offsetX, e.offsetY).toVec().add(this._relVec.opposite());
+      this.pos = this._fixed
+        ? new Vec(e.offsetX, e.offsetY).add(this._relVec.opposite())
+        : new MouseCoords(e.offsetX, e.offsetY).toVec().add(this._relVec.opposite());
     });
   }
 
-  protected styleChanged(prop: (keyof Style)[]) { }
-
   abstract make(): void;
 
-  protected makeClip() {
+  protected abstract update(): void;
+
+  protected styleChanged(prop: (keyof Style)[]) { }
+
+  makeClip() {
     this.make();
     state.ctx.clip(this._path);
   }
@@ -112,10 +117,10 @@ export abstract class Shape {
     state.ctx.restore();
   }
 
-  protected abstract update(): void;
-
   protected isPointIn(point: Vec): boolean {
-    return state.ctx.isPointInPath(
+    return this._fixed
+      ? state.ctx.isPointInPath(this._path, point.x, point.y)
+      : state.ctx.isPointInPath(
       this._path,
       (point.x / state.scale) - (state.translate.x / state.scale),
       (point.y / state.scale) - (state.translate.y / state.scale)
@@ -131,9 +136,15 @@ export abstract class Shape {
   get size(): Size { return this.sizeBS.getValue(); }
   get corners() { return this._corners.map(corner => corner.clone()); }
   get actionable() { return this._actionable; }
+  get center() { return this.pos.add(this.size.w / 2, this.size.h / 2); }
+  get absCenter() { return this.absPos.add(this.size.w / 2, this.size.h / 2); }
+
+  set fixed(val: boolean) {
+    if (this._fixed === undefined) this._fixed = val;
+  }
 
   set actionable(val: boolean) {
-    this.actionable = val;
+    this._actionable = val;
     if (!val) {
       this.draggable = false;
       if (state.active === this.id) state.active = null;
@@ -175,7 +186,7 @@ export abstract class Shape {
    * @param e MouseEvent
    */
   mousemoveHandler(e: MouseEvent): boolean {
-    if (!e || !this._actionable || (state.active && state.active !== this.id)) return false;
+    if (!e) return false;
     if (this.isPointIn(new Vec(e.offsetX, e.offsetY))) {
       if (!this._mousein) {
         this._mousein = true;
@@ -200,7 +211,7 @@ export abstract class Shape {
    * @param e MouseEvent
    */
   mousedownHandler(e: MouseEvent): boolean {
-    if (!e || !this._actionable || (state.active && state.active !== this.id)) return false;
+    if (!e) return false;
     if (this._mousein) {
       state.active = this.id;
       this._dragStart = true;
@@ -216,7 +227,7 @@ export abstract class Shape {
    * @param e MouseEvent
    */
   mouseupHandler(e: MouseEvent) {
-    if (!e || !this._actionable || (state.active && state.active !== this.id)) return false;
+    if (!e) return false;
     if (this._dragStart) {
       state.active = null;
       if (this.drag) {
@@ -236,6 +247,7 @@ export abstract class Shape {
   relate(shape: Shape) {
     this.deattach();
     this._rel = shape;
+    this._clip = shape;
     this._relVec = shape.absPos;
     this._relDestroySub = shape.destroy$.subscribe(() => this.unrelate());
     this._relSub = shape.absPos$.subscribe(relVec => {
@@ -247,6 +259,7 @@ export abstract class Shape {
 
   unrelate() {
     this._rel = null
+    this._clip = null;
     this._relVec = new Vec(0, 0);
     !!this._relSub && this._relSub.unsubscribe();
     !!this._relDestroySub && this._relDestroySub.unsubscribe();

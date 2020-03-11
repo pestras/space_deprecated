@@ -27,7 +27,7 @@ export interface State {
   panMode: boolean;
   zoomMode: boolean;
   active: string;
-  style: Style
+  style: Style;
 }
 
 export const state: State = {

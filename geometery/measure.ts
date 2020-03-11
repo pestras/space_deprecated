@@ -170,6 +170,10 @@ export class Vec {
     return new Vec(this._x - point.x, this._y - point.y);
   }
 
+  getMiddle(point: Vec) {
+    return new Vec((this._x + point.x) / 2, (this._y + point.y) / 2)
+  }
+
   match(point: Vec) {
     return this.x === point.x && this.y === point.y;
   }

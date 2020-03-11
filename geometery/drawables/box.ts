@@ -4,7 +4,7 @@ import { state } from '../../state';
 
 export class Box extends Shape {
   protected _shapes: Shape[] = [];
-  protected _padding: [number, number, number, number] = [0, 5, 0, 0];
+  protected _padding: [number, number, number, number] = [0, 0, 0, 0];
 
   constructor(position: Vec) {
     super();
@@ -54,10 +54,10 @@ export class Box extends Shape {
   }
 
   set padding(val: [number, number?, number?, number?]) {
-    if (val.length === 1) this._padding = [val[0], val[0] * 2 + 5, val[0] * 2, val[0]];
-    else if (val.length === 2) this._padding = [val[0], val[1] * 2 + 5, val[0] * 2, val[1]];
-    else if (val.length === 3) this._padding = [val[0], val[1] * 2 + 5, val[2] + val[0], val[1]];
-    else this._padding = [val[0], val[1] + val[3] + 5, val[2] + val[0], val[3]];
+    if (val.length === 1) this._padding = [val[0], val[0] * 2, val[0] * 2, val[0]];
+    else if (val.length === 2) this._padding = [val[0], val[1] * 2, val[0] * 2, val[1]];
+    else if (val.length === 3) this._padding = [val[0], val[1] * 2, val[2] + val[0], val[1]];
+    else this._padding = [val[0], val[1] + val[3], val[2] + val[0], val[3]];
   }
 
   make() {

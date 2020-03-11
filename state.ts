@@ -41,7 +41,7 @@ export const state: State = {
   style: {
     fill: '#FF5566',
     strokeStyle: '#222222',
-    lineWidth: 2,
+    lineWidth: 0,
     lineJoin: "round",
     lineCap: "round",
     fontSize: 16,

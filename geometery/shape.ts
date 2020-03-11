@@ -24,10 +24,11 @@ export abstract class Shape {
   protected _mousein = false;
   protected _dragStart = false;
   protected _drag = false;
-  
-  readonly id = Unique.Get();
+  protected _actionable = true;
+
   readonly _style = Object.assign({}, state.style);
 
+  id = Unique.Get();
   draggable = false;
   visible = true;
 
@@ -40,7 +41,7 @@ export abstract class Shape {
   // destroy observer
   protected destroyBS = new Subject<void>();
   readonly destroy$ = this.destroyBS.asObservable();
-  
+
   // mousein observer
   protected mouseinBS = new Subject<MouseEvent>();
   readonly mousein$ = this.mouseinBS.asObservable();
@@ -67,7 +68,7 @@ export abstract class Shape {
     });
   }
 
-  protected styleChanged(prop: keyof Style) {}
+  protected styleChanged(prop: (keyof Style)[]) { }
 
   abstract make(): void;
 
@@ -79,9 +80,9 @@ export abstract class Shape {
   draw(): void {
     if (!this.visible) return;
     state.ctx.save();
-    
+
     if (this._clip) this._clip.makeClip();
-    
+
     this._path = new Path2D();
     this.make();
 
@@ -110,7 +111,7 @@ export abstract class Shape {
 
     state.ctx.restore();
   }
-  
+
   protected abstract update(): void;
 
   protected isPointIn(point: Vec): boolean {
@@ -129,6 +130,15 @@ export abstract class Shape {
   get pos(): Vec { return this._pos.clone(); }
   get size(): Size { return this.sizeBS.getValue(); }
   get corners() { return this._corners.map(corner => corner.clone()); }
+  get actionable() { return this._actionable; }
+
+  set actionable(val: boolean) {
+    this.actionable = val;
+    if (!val) {
+      this.draggable = false;
+      if (state.active === this.id) state.active = null;
+    }
+  }
 
   set pos(val: Vec) {
     this._pos = val.clone();
@@ -137,8 +147,16 @@ export abstract class Shape {
     this.update();
   }
 
-  style<T extends keyof Style>(prop: T, val: Style[T]) {
-    this._style[prop] = val;
+  style(style: Partial<Style>): void;
+  style<T extends keyof Style>(prop: T, val: Style[T]): void;
+  style<T extends keyof Style>(prop: T | Partial<Style>, val?: Style[T]) {
+    if (typeof prop === 'string') {
+      this._style[prop] = val;
+      this.styleChanged([prop]);
+    } else {
+      Object.assign(this._style, prop);
+      this.styleChanged(<T[]>Object.keys(prop));
+    }
   }
 
   destory() {
@@ -148,7 +166,7 @@ export abstract class Shape {
 
     for (let sub of this._subscriptions)
       sub.unsubscribe();
-      
+
     this.destroyBS.next();
   }
 
@@ -157,7 +175,7 @@ export abstract class Shape {
    * @param e MouseEvent
    */
   mousemoveHandler(e: MouseEvent): boolean {
-    if (!e || (state.active && state.active !== this.id)) return false;
+    if (!e || !this._actionable || (state.active && state.active !== this.id)) return false;
     if (this.isPointIn(new Vec(e.offsetX, e.offsetY))) {
       if (!this._mousein) {
         this._mousein = true;
@@ -182,7 +200,7 @@ export abstract class Shape {
    * @param e MouseEvent
    */
   mousedownHandler(e: MouseEvent): boolean {
-    if (!e || (state.active && state.active !== this.id)) return false;
+    if (!e || !this._actionable || (state.active && state.active !== this.id)) return false;
     if (this._mousein) {
       state.active = this.id;
       this._dragStart = true;
@@ -198,7 +216,7 @@ export abstract class Shape {
    * @param e MouseEvent
    */
   mouseupHandler(e: MouseEvent) {
-    if (!e || (state.active && state.active !== this.id)) return false;
+    if (!e || !this._actionable || (state.active && state.active !== this.id)) return false;
     if (this._dragStart) {
       state.active = null;
       if (this.drag) {
@@ -229,7 +247,7 @@ export abstract class Shape {
 
   unrelate() {
     this._rel = null
-    this._relVec = new Vec(0, 0);    
+    this._relVec = new Vec(0, 0);
     !!this._relSub && this._relSub.unsubscribe();
     !!this._relDestroySub && this._relDestroySub.unsubscribe();
     this.update();

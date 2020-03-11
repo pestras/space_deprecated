@@ -38,8 +38,8 @@ export class TextBox extends Shape {
     ];
   }
 
-  protected styleChanged(prop: keyof Style) {
-    if (prop === 'fontSize' || prop === 'lineCap') {
+  protected styleChanged(props: (keyof Style)[]) {
+    if (props.indexOf('fontSize') > -1 || props.indexOf('lineCap') > -1) {
       this._lineHeight = this._style.fontSize + this._style.lineGap;
       this.update();
     }

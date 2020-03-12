@@ -85,9 +85,8 @@ export class Space {
     if (val) state.panMode = false;
   }
 
-  addLayer(layer: Layer, fixed = false) {
-    layer.fixed = fixed;
-    if (fixed) {
+  addLayer(layer: Layer) {
+    if (layer.fixed) {
       if (this.fixedLayers.indexOf(layer) === -1) this.fixedLayers.push(layer);
     } else {
       if (this.layers.indexOf(layer) === -1) this.layers.push(layer);

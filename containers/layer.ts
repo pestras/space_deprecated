@@ -8,15 +8,11 @@ export class Layer {
   protected shapes: Shape[] = [];
   visible = true;
 
-  constructor() {}
+  constructor(fixed = false) {
+    this._fixed = fixed;
+  }
 
   get fixed() { return this._fixed; }
-  set fixed(val: boolean) {
-    if (this._fixed === undefined) {
-      this._fixed = val;
-      for (let shape of this.shapes) shape.fixed = this._fixed;
-    }
-  }
 
   onEvent(event: string, e: MouseEvent) {
     for (let i = this.shapes.length - 1; i > -1; i--) {

@@ -233,4 +233,21 @@ export class Space {
     state.translate = this.center;
     state.scale = 1;
   }
+
+  zoom(): void
+  zoom(out: boolean): void
+  zoom(amount: number): void
+  zoom(amount: number, out: boolean): void
+  zoom(amount: number | boolean = false, out = false) {
+    if (!amount) {
+      amount = 0.1;
+      out = false;
+    } else if (amount === true) {
+      amount = 0.1;
+      out = true;
+    }
+
+    let scale = state.scale + (out ? -0.2 : 0.2);
+    state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
+  }
 }

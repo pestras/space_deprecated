@@ -77,7 +77,7 @@ export class Box extends Shape {
       if (size.h / 2 < radius) radius = size.h / 2;
 
       this._path.moveTo(this._corners[0].x + this._style.radius - this._padding[3], this._corners[0].y - this._padding[0]);
-      this._path.arcTo(this._corners[1].x + this._padding[1], this._corners[1].y - this._padding[0], this._corners[2].x + this._padding[1], this._corners[2].y + this.padding[2], radius);
+      this._path.arcTo(this._corners[1].x + this._padding[1], this._corners[1].y - this._padding[0], this._corners[2].x + this._padding[1], this._corners[2].y + this._padding[2], radius);
       this._path.arcTo(this._corners[2].x + this._padding[1], this._corners[2].y + this._padding[2], this._corners[3].x - this._padding[3], this._corners[3].y + this._padding[2], radius);
       this._path.arcTo(this._corners[3].x - this._padding[3], this._corners[3].y + this._padding[2], this._corners[0].x - this._padding[3], this._corners[0].y - this._padding[1], radius);
       this._path.arcTo(this._corners[0].x - this._padding[3], this._corners[0].y - this._padding[0], this._corners[1].x + this._padding[1], this._corners[1].y - this._padding[0], radius);

@@ -32,27 +32,65 @@ export class Img extends Shape {
 
   protected update() {
     if (!this._loaded) return;
-    
+    console.log('update');
     let imgSize = new Size(this._image.width, this._image.height);
+    let size: Size;
+    this._cropSize = imgSize.clone();
+    this._cropPos = new Vec(0, 0);
     
     if (this._flexSize) {
-      if (this._flexSize.w === 'auto' && this._flexSize.h !== 'auto') {
-        this.sizeBS.next(imgSize);
+      if (this._flexSize.w === 'auto' && this._flexSize.h === 'auto') {
+        size = imgSize.clone();
       } else if (this._flexSize.w === 'auto') {
-        this.sizeBS.next(new Size((imgSize.h / imgSize.w) * <number>this._flexSize.h, <number>this._flexSize.h));
+        size = new Size((imgSize.h / imgSize.w) * <number>this._flexSize.h, <number>this._flexSize.h);
       } else if (this._flexSize.h === 'auto') {
-        this.sizeBS.next(new Size((<number>this._flexSize.w, imgSize.w / imgSize.h) * <number>this._flexSize.w));
+        size = new Size((<number>this._flexSize.w, imgSize.w / imgSize.h) * <number>this._flexSize.w);
       } else {
-        this.sizeBS.next(<any>this._flexSize.clone());
+        size = <any>this._flexSize.clone();
       }
     } else {
-      this.sizeBS.next(imgSize);
+      size = imgSize.clone();
     }
 
-    let size = this.size;
+    if (!size.equals(imgSize)) {
+
+      if (this._mode === 'contain') {
+        if (Math.abs(imgSize.w / size.w) > Math.abs(imgSize.h / size.h))
+          size.h = (size.w / imgSize.w) * imgSize.h;
+        else
+          size.w = (size.h / imgSize.h) * imgSize.w;
+  
+      } else {
+        if (Math.abs(imgSize.w / size.w) < Math.abs(imgSize.h / size.h)) {
+          imgSize = new Size(this._image.width, (size.w / imgSize.w) * imgSize.h);
+          this._cropSize.w = this._image.width;
+          this._cropSize.h = (size.h / imgSize.h) * this._image.height;
+  
+          if (this._mode.indexOf('start') > -1) {
+            this._cropPos = new Vec(0, 0);
+          } else if (this._mode.indexOf('end') > -1) {
+            this._cropPos = new Vec(0, this._image.height - this._cropSize.h);
+          } else {
+            this._cropPos = new Vec(0, (this._image.height / 2) - this._cropSize.h / 2);
+          }
+  
+        } else {
+          imgSize = new Size((size.h / imgSize.h) * imgSize.w, this._image.height);
+          this._cropSize.w = (size.w / imgSize.w) * this._image.width;
+          this._cropSize.h = this._image.height;
+  
+          if (this._mode.indexOf('start') > -1) {
+            this._cropPos = new Vec(0, 0);
+          } else if (this._mode.indexOf('end') > -1) {
+            this._cropPos = new Vec(this._image.width - this._cropSize.w, 0);
+          } else {
+            this._cropPos = new Vec((this._image.width / 2) - this._cropSize.w / 2, 0);
+          }
+        }
+      }
+    }
     
-    this._cropPos = new Vec(0, 0);
-    this._cropSize = imgSize.clone();
+    this.sizeBS.next(size);
     
     this._corners = [
       this.absPos,
@@ -60,47 +98,11 @@ export class Img extends Shape {
       this.absPos.add(this.size.w, this.size.h),
       this.absPos.add(0, this.size.h)
     ];
-
-    if (size === imgSize) return;
-
-    if (this._mode === 'contain') {
-      if (Math.abs(imgSize.w / size.w) > Math.abs(imgSize.h / size.h))
-        size.h = (size.w / imgSize.w) * imgSize.h;
-      else
-        size.w = (size.h / imgSize.h) * imgSize.w;
-
-    } else {
-      if (Math.abs(imgSize.w / size.w) < Math.abs(imgSize.h / size.h)) {
-        imgSize = new Size(this._image.width, (size.w / imgSize.w) * imgSize.h);
-        this._cropSize.w = this._image.width;
-        this._cropSize.h = (size.h / imgSize.h) * this._image.height;
-
-        if (this._mode.indexOf('start') > -1) {
-          this._cropPos = new Vec(0, 0);
-        } else if (this._mode.indexOf('end') > -1) {
-          this._cropPos = new Vec(0, this._image.height - this._cropSize.h);
-        } else {
-          this._cropPos = new Vec(0, (this._image.height / 2) - this._cropSize.h / 2);
-        }
-
-      } else {
-        imgSize = new Size((size.h / imgSize.h) * imgSize.w, this._image.height);
-        this._cropSize.w = (size.w / imgSize.w) * this._image.width;
-        this._cropSize.h = this._image.height;
-
-        if (this._mode.indexOf('start') > -1) {
-          this._cropPos = new Vec(0, 0);
-        } else if (this._mode.indexOf('end') > -1) {
-          this._cropPos = new Vec(this._image.width - this._cropSize.w, 0);
-        } else {
-          this._cropPos = new Vec((this._image.width / 2) - this._cropSize.w / 2, 0);
-        }
-      }
-    }
   }
 
   protected onLoad() {
     this._loaded = true;
+    console.log('loaded');
     this.update();
   }
 
@@ -111,7 +113,7 @@ export class Img extends Shape {
   }
 
   get size() { return this.sizeBS.getValue(); }
-  set size(val: any) {
+  setSize(val: FlexSize) {
     this._flexSize = val.clone();
     this.update();
   }
@@ -147,8 +149,11 @@ export class Img extends Shape {
 
     state.ctx.save();
     if (this._clip) this._clip.makeClip();
-    this.make();
-    state.ctx.clip(this._path);
+    else {
+      this.make();
+      state.ctx.clip(this._path);
+    }
+    
     state.ctx.beginPath();
 
     if (this._style.shadow) {

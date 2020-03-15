@@ -134,7 +134,7 @@ export abstract class Shape {
   get absPos(): Vec { return this.absPosBS.getValue(); }
   get pos(): Vec { return this._pos.clone(); }
   get size(): Size { return this.sizeBS.getValue(); }
-  get corners() { return this._corners.map(corner => corner.clone()); }
+  get corners() { return this._corners ? this._corners.map(corner => corner.clone()) : [this.absPos, this.absPos, this.absPos, this.absPos]; }
   get actionable() { return this._actionable; }
   get center() { return this.pos.add(this.size.w / 2, this.size.h / 2); }
   get absCenter() { return this.absPos.add(this.size.w / 2, this.size.h / 2); }
@@ -247,7 +247,6 @@ export abstract class Shape {
   relate(shape: Shape) {
     this.deattach();
     this._rel = shape;
-    this._clip = shape;
     this._relVec = shape.absPos;
     this._relDestroySub = shape.destroy$.subscribe(() => this.unrelate());
     this._relSub = shape.absPos$.subscribe(relVec => {
@@ -258,8 +257,7 @@ export abstract class Shape {
   }
 
   unrelate() {
-    this._rel = null
-    this._clip = null;
+    this._rel = null;
     this._relVec = new Vec(0, 0);
     !!this._relSub && this._relSub.unsubscribe();
     !!this._relDestroySub && this._relDestroySub.unsubscribe();

@@ -92,7 +92,9 @@ export class FlexSize {
   }
 
   get w() { return this._w; }
+  set w(val: number | 'auto') { this._w = typeof val === 'number' ? Math.abs(val) : val; }
   get h() { return this._h; }
+  set h(val: number | 'auto') { this._h = typeof val === 'number' ? Math.abs(val) : val; }
 
   clone() {
     return new FlexSize(this._w, this._h);

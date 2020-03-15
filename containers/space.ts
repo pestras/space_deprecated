@@ -247,7 +247,7 @@ export class Space {
       out = true;
     }
 
-    let scale = state.scale + (out ? -0.2 : 0.2);
+    let scale = state.scale + (out ? -amount : amount);
     state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
   }
 }

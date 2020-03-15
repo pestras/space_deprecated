@@ -32,7 +32,6 @@ export class Img extends Shape {
 
   protected update() {
     if (!this._loaded) return;
-    console.log('update');
     let imgSize = new Size(this._image.width, this._image.height);
     let size: Size;
     this._cropSize = imgSize.clone();
@@ -102,7 +101,6 @@ export class Img extends Shape {
 
   protected onLoad() {
     this._loaded = true;
-    console.log('loaded');
     this.update();
   }
 
@@ -153,7 +151,7 @@ export class Img extends Shape {
       this.make();
       state.ctx.clip(this._path);
     }
-    
+
     state.ctx.beginPath();
 
     if (this._style.shadow) {

@@ -29,10 +29,12 @@ export class Layer {
     return false;
   }
 
-  addShape(shape: Shape) {
-    if (this.shapes.indexOf(shape) === -1) {
-      this.shapes.push(shape);
-      if (this._fixed !== undefined) shape.fixed = this._fixed;
+  addShapes(...shapes: Shape[]) {
+    for (let shape of shapes) {
+      if (this.shapes.indexOf(shape) === -1) {
+        this.shapes.push(shape);
+        if (this._fixed !== undefined) shape.fixed = this._fixed;
+      }
     }
   }
 

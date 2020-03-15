@@ -99,6 +99,10 @@ export class FlexSize {
   clone() {
     return new FlexSize(this._w, this._h);
   }
+
+  equals(size: Size) {
+    return this.w === size.w && this.h === size.h;
+  }
 }
 
 /**

@@ -18,11 +18,11 @@ export class Layer {
     for (let i = this.shapes.length - 1; i > -1; i--) {
       if (!this.shapes[i].actionable || (state.active && state.active !== this.shapes[i].id)) continue;
       if (event === 'mousemove') {
-       if (this.shapes[i].mousemoveHandler(e)) return true;
+        if (this.shapes[i].mousemoveHandler(e)) return true;
       } else if (event === "mousedown") {
-        if (this.shapes[i].mousedownHandler(e)) return true;        
+        if (this.shapes[i].mousedownHandler(e)) return true;
       } else if (event === "mouseup") {
-        if (this.shapes[i].mouseupHandler(e)) return true;        
+        if (this.shapes[i].mouseupHandler(e)) return true;
       }
     }
 
@@ -38,12 +38,14 @@ export class Layer {
     }
   }
 
-  removeShape(shape: Shape) {
-    let index = this.shapes.indexOf(shape);
+  removeShapes(...shapes: Shape[]) {
+    for (let shape of shapes) {
+      let index = this.shapes.indexOf(shape);
 
-    if (index > -1) {
-      shape.destory();
-      this.shapes.splice(index, 1);
+      if (index > -1) {
+        shape.destory();
+        this.shapes.splice(index, 1);
+      }
     }
   }
 

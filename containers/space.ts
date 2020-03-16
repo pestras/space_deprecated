@@ -85,27 +85,31 @@ export class Space {
     if (val) state.panMode = false;
   }
 
-  addLayer(layer: Layer) {
-    if (layer.fixed) {
-      if (this.fixedLayers.indexOf(layer) === -1) this.fixedLayers.push(layer);
-    } else {
-      if (this.layers.indexOf(layer) === -1) this.layers.push(layer);
+  addLayers(...layers: Layer[]) {
+    for (let layer of layers) {
+      if (layer.fixed) {
+        if (this.fixedLayers.indexOf(layer) === -1) this.fixedLayers.push(layer);
+      } else {
+        if (this.layers.indexOf(layer) === -1) this.layers.push(layer);
+      }
     }
   }
 
-  removeLayer(layer: Layer) {
-    if (layer.fixed) {
-      let index = this.fixedLayers.indexOf(layer);
-      if (index > -1) {
-        layer.destroy();
-        this.fixedLayers.splice(index, 1);
-      }
-
-    } else {
-      let index = this.layers.indexOf(layer);
-      if (index > -1) {
-        layer.destroy();
-        this.layers.splice(index, 1);
+  removeLayers(...layers: Layer[]) {
+    for (let layer of layers) {
+      if (layer.fixed) {
+        let index = this.fixedLayers.indexOf(layer);
+        if (index > -1) {
+          layer.destroy();
+          this.fixedLayers.splice(index, 1);
+        }
+  
+      } else {
+        let index = this.layers.indexOf(layer);
+        if (index > -1) {
+          layer.destroy();
+          this.layers.splice(index, 1);
+        }
       }
     }
   }
@@ -239,15 +243,21 @@ export class Space {
   zoom(amount: number): void
   zoom(amount: number, out: boolean): void
   zoom(amount: number | boolean = false, out = false) {
-    if (!amount) {
+    if (amount === undefined) return state.scale;
+
+    if (typeof amount === 'boolean') {
+      out = amount;
       amount = 0.1;
-      out = false;
-    } else if (amount === true) {
-      amount = 0.1;
-      out = true;
     }
 
     let scale = state.scale + (out ? -amount : amount);
     state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
+  }
+
+  origin(pos?: Vec) {
+    if (!pos) return state.translate.clone();
+    
+    state.ctx.transform(1, 0, 0, 1, 0, 0);
+    state.translate = pos.clone();
   }
 }

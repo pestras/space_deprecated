@@ -10,6 +10,13 @@ export class MouseCoords extends Vec {
     else super(x.x, x.y);
   }
 
+  static From(pos: Vec) {
+    return new Vec(
+      (pos.x / state.scale) - (state.translate.x / state.scale),
+      (pos.y / state.scale) - (state.translate.y / state.scale)
+    )
+  }
+
   get x() { return (this._x / state.scale) - (state.translate.x / state.scale) }
   get y() { return (this._y / state.scale) - (state.translate.y / state.scale) }
 

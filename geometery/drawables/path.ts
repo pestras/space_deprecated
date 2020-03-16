@@ -63,8 +63,6 @@ export class Path extends Shape {
       }
     }
 
-    console.log('making path');
-
     if (this.close) this._path.closePath();
   }
 }

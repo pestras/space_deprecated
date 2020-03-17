@@ -41,10 +41,14 @@ export class Space {
   }
 
   private triggerEvent(event: string, e: MouseEvent) {
+    if (event === 'mouseup' && this.panMode) return this.panMode = false;
+
     for (let i = this.fixedLayers.length - 1; i > -1; i--)
       if (this.fixedLayers[i].onEvent(event, e)) return;
     for (let i = this.layers.length - 1; i > -1; i--)
       if (this.layers[i].onEvent(event, e)) return;
+
+    if (event === 'mousedown') this.panMode = true;
   }
 
   private init() {
@@ -61,11 +65,11 @@ export class Space {
     });
     state.canvas.addEventListener('mousedown', e => {
       this.mousedown = new MouseCoords(e.offsetX, e.offsetY);
-      if (!state.panMode && !state.zoomMode) this.triggerEvent('mousedown', e);
+      if (!state.zoomMode) this.triggerEvent('mousedown', e);
     });
     state.canvas.addEventListener('mouseup', e => {
       this.mousedown = null;
-      if (!state.panMode && !state.zoomMode) this.triggerEvent('mouseup', e);
+      if (!state.zoomMode) this.triggerEvent('mouseup', e);
     });
 
     window.addEventListener('resize', () => {
@@ -119,6 +123,7 @@ export class Space {
     this.layers = [];
     for (let layer of this.fixedLayers) layer.destroy();
     this.fixedLayers = [];
+    this.resetTransform();
   }
 
   forward(layer: Layer) {

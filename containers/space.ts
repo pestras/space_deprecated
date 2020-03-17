@@ -118,17 +118,6 @@ export class Space {
     }
   }
 
-  clear(stopRender = true) {
-    for (let layer of this.layers) layer.destroy();
-    this.layers = [];
-    for (let layer of this.fixedLayers) layer.destroy();
-    this.fixedLayers = [];
-    this.resetTransform();
-    if (!this.animationHandle) return;
-    cancelAnimationFrame(this.animationHandle);
-    this.frame();
-  }
-
   forward(layer: Layer) {
     if (layer.fixed) {
       let index = this.fixedLayers.indexOf(layer);
@@ -244,6 +233,18 @@ export class Space {
     state.ctx.transform(1, 0, 0, 1, 0, 0);
     state.translate = this.center;
     state.scale = 1;
+  }
+
+  clear(stopRender = true, resetTransform = true) {
+    for (let layer of this.layers) layer.destroy();
+    this.layers = [];
+    for (let layer of this.fixedLayers) layer.destroy();
+    this.fixedLayers = [];
+    resetTransform && this.resetTransform();
+    if (!this.animationHandle || !stopRender) return;
+    window.cancelAnimationFrame(this.animationHandle);
+    this.animationHandle = null;
+    this.frame();
   }
 
   zoom(amount?: number): number | void {

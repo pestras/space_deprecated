@@ -63,7 +63,7 @@ export abstract class Shape {
   readonly dragend$ = this.dragendBS.asObservable();
 
   constructor() {
-    this.drag$.subscribe(e => {
+    this._dragSubs = this.drag$.subscribe(e => {
       if (!this.draggable) return;
       this.pos = this._fixed
         ? new Vec(e.offsetX, e.offsetY).add(this._relVec.opposite())

@@ -84,7 +84,7 @@ export class Space {
     if (val) state.zoomMode = false;
   }
   get zoomMode() { return state.zoomMode; }
-  set zoomMode(val: boolean) { 
+  set zoomMode(val: boolean) {
     state.zoomMode = val;
     if (val) state.panMode = false;
   }
@@ -107,7 +107,7 @@ export class Space {
           layer.destroy();
           this.fixedLayers.splice(index, 1);
         }
-  
+
       } else {
         let index = this.layers.indexOf(layer);
         if (index > -1) {
@@ -118,12 +118,15 @@ export class Space {
     }
   }
 
-  clear() {
+  clear(stopRender = true) {
     for (let layer of this.layers) layer.destroy();
     this.layers = [];
     for (let layer of this.fixedLayers) layer.destroy();
     this.fixedLayers = [];
     this.resetTransform();
+    if (!this.animationHandle) return;
+    cancelAnimationFrame(this.animationHandle);
+    this.frame();
   }
 
   forward(layer: Layer) {
@@ -180,7 +183,7 @@ export class Space {
         this.layers.splice(index, 1);
         this.layers.unshift(layer);
       }
-    }    
+    }
   }
 
   protected drawAxis() {
@@ -243,25 +246,16 @@ export class Space {
     state.scale = 1;
   }
 
-  zoom(): void
-  zoom(out: boolean): void
-  zoom(amount: number): void
-  zoom(amount: number, out: boolean): void
-  zoom(amount: number | boolean = false, out = false) {
+  zoom(amount?: number): number | void {
     if (amount === undefined) return state.scale;
 
-    if (typeof amount === 'boolean') {
-      out = amount;
-      amount = 0.1;
-    }
-
-    let scale = state.scale + (out ? -amount : amount);
+    let scale = state.scale + amount;
     state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
   }
 
   origin(pos?: Vec) {
     if (!pos) return state.translate.clone();
-    
+
     state.ctx.transform(1, 0, 0, 1, 0, 0);
     state.translate = pos.clone();
   }

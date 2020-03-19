@@ -260,6 +260,8 @@ export class Space {
     if (amount === undefined) return state.scale;
     let scale = state.scale + amount;
     state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
+    this._viewSize = this._size.divide(state.scale);
+    this._viewCenter = state.translate.center(this._viewSize);
   }
 
   resetTransform() {

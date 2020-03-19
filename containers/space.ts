@@ -249,6 +249,12 @@ export class Space {
     this._animationHandle = null;
   }
 
+  zoom(amount?: number) {
+    if (amount === undefined) return state.scale;
+    let scale = state.scale + amount;
+    state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
+  }
+
   resetTransform() {
     state.ctx.transform(1, 0, 0, 1, 0, 0);
     state.translate = this._center;

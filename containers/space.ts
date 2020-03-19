@@ -45,6 +45,10 @@ export class Space {
   }
 
   get rendering() { return !!this._animationHandle; }
+  get center() { return this._center.clone(); }
+  get viewCenter() { return this._viewCenter.clone(); }
+  get size() { return this._size.clone(); }
+  get viewSize() { return this._viewSize.clone(); }
 
   addLayers(...layers: Layer[]) {
     for (let layer of layers) {

@@ -1,24 +1,33 @@
 import { Layer } from './layer';
 import { state, Style } from '../state';
-import { Vec } from '../geometery/measure';
-import { MouseCoords } from '../geometery/mouse-point';
+import { Vec, Size } from '../geometery/measure';
+
+let framePerSecond: 60 | 30 | 20 | 10 | 6 | 5 | 4 | 3 | 2 | 1;
+let frameMinTime: number;
+let lastFrameTime = 0
 
 export interface SpaceOptions {
   axis?: boolean;
   bgc?: string;
+  frameRate?: 60 | 30 | 20 | 10 | 6 | 5 | 4 | 3 | 2 | 1;
 }
 
 export class Space {
-  protected layers: Layer[] = [];
-  protected fixedLayers: Layer[] = [];
-  protected animationHandle: number;
-  protected mousedown: Vec = null;
-  protected ctrlBtnPress = false;
-  protected shftBtnPress = false;
-  protected center: Vec;
+  protected _layers: Layer[] = [];
+  protected _fixedLayers: Layer[] = [];
+  protected _animationHandle: number;
+  protected _mousedown: Vec = null;
+  protected _viewMousedown: Vec = null;
+  protected _mousedownDir: Vec = null;
+  protected _panning = false;
+  protected _center: Vec;
+  protected _viewCenter: Vec;
+  protected _size: Size;
+  protected _viewSize: Size;
   readonly options: SpaceOptions = {
     axis: true,
-    bgc: '#F6F6F6'
+    bgc: '#F6F6F6',
+    frameRate: 30
   }
 
   constructor(canvasId: string, options: SpaceOptions = {}, style: Style = {}) {
@@ -28,73 +37,20 @@ export class Space {
     if (!state.canvas) return;
     state.ctx = state.canvas.getContext('2d');
     state.canvas.style.width = state.canvas.style.height = "100%";
-    this.center = new Vec(state.canvas.clientWidth / 2, state.canvas.clientHeight / 2);
-    state.translate = this.center;
+    framePerSecond = options.frameRate || this.options.frameRate;
+    frameMinTime = (1000 / 60) * (60 / framePerSecond) - (1000 / 60) * 0.5;
     this.resize();
     this.init();
   }
 
-  private resize() {
-    let clientRect = state.canvas.getBoundingClientRect();
-    state.canvas.width = clientRect.width;
-    state.canvas.height = clientRect.height;
-  }
-
-  private triggerEvent(event: string, e: MouseEvent) {
-    if (event === 'mouseup' && this.panMode) return this.panMode = false;
-
-    for (let i = this.fixedLayers.length - 1; i > -1; i--)
-      if (this.fixedLayers[i].onEvent(event, e)) return;
-    for (let i = this.layers.length - 1; i > -1; i--)
-      if (this.layers[i].onEvent(event, e)) return;
-
-    if (event === 'mousedown') this.panMode = true;
-  }
-
-  private init() {
-    state.canvas.addEventListener('mousemove', e => {
-      if (state.panMode && this.mousedown) {
-        state.translate = state.translate.add(e.movementX, e.movementY);
-
-      } else if (state.zoomMode && this.mousedown) {
-        let newScale = state.scale - (0.005 * e.movementY);
-        state.scale = newScale <= 0.1 ? 0.1 : (newScale >= 5 ? 5 : newScale);
-      } else {
-        this.triggerEvent('mousemove', e);
-      }
-    });
-    state.canvas.addEventListener('mousedown', e => {
-      this.mousedown = new MouseCoords(e.offsetX, e.offsetY);
-      if (!state.zoomMode) this.triggerEvent('mousedown', e);
-    });
-    state.canvas.addEventListener('mouseup', e => {
-      this.mousedown = null;
-      if (!state.zoomMode) this.triggerEvent('mouseup', e);
-    });
-
-    window.addEventListener('resize', () => {
-      this.resize();
-    });
-  }
-
-  get rendering() { return !!this.animationHandle; }
-  get panMode() { return state.panMode; }
-  set panMode(val: boolean) {
-    state.panMode = val;
-    if (val) state.zoomMode = false;
-  }
-  get zoomMode() { return state.zoomMode; }
-  set zoomMode(val: boolean) {
-    state.zoomMode = val;
-    if (val) state.panMode = false;
-  }
+  get rendering() { return !!this._animationHandle; }
 
   addLayers(...layers: Layer[]) {
     for (let layer of layers) {
       if (layer.fixed) {
-        if (this.fixedLayers.indexOf(layer) === -1) this.fixedLayers.push(layer);
+        if (this._fixedLayers.indexOf(layer) === -1) this._fixedLayers.push(layer);
       } else {
-        if (this.layers.indexOf(layer) === -1) this.layers.push(layer);
+        if (this._layers.indexOf(layer) === -1) this._layers.push(layer);
       }
     }
   }
@@ -102,17 +58,17 @@ export class Space {
   removeLayers(...layers: Layer[]) {
     for (let layer of layers) {
       if (layer.fixed) {
-        let index = this.fixedLayers.indexOf(layer);
+        let index = this._fixedLayers.indexOf(layer);
         if (index > -1) {
           layer.destroy();
-          this.fixedLayers.splice(index, 1);
+          this._fixedLayers.splice(index, 1);
         }
 
       } else {
-        let index = this.layers.indexOf(layer);
+        let index = this._layers.indexOf(layer);
         if (index > -1) {
           layer.destroy();
-          this.layers.splice(index, 1);
+          this._layers.splice(index, 1);
         }
       }
     }
@@ -120,59 +76,117 @@ export class Space {
 
   forward(layer: Layer) {
     if (layer.fixed) {
-      let index = this.fixedLayers.indexOf(layer);
-      if (index > -1 && index < this.fixedLayers.length - 1) this.layers.splice(index, 2, this.layers[index + 1], this.layers[index]);
+      let index = this._fixedLayers.indexOf(layer);
+      if (index > -1 && index < this._fixedLayers.length - 1) this._layers.splice(index, 2, this._layers[index + 1], this._layers[index]);
 
     } else {
-      let index = this.layers.indexOf(layer);
-      if (index > -1 && index < this.layers.length - 1) this.layers.splice(index, 2, this.layers[index + 1], this.layers[index]);
+      let index = this._layers.indexOf(layer);
+      if (index > -1 && index < this._layers.length - 1) this._layers.splice(index, 2, this._layers[index + 1], this._layers[index]);
     }
 
   }
 
   tofront(layer: Layer) {
     if (layer.fixed) {
-      let index = this.fixedLayers.indexOf(layer);
-      if (index > -1 && index < this.fixedLayers.length - 1) {
-        this.fixedLayers.splice(index, 1);
-        this.fixedLayers.push(layer);
+      let index = this._fixedLayers.indexOf(layer);
+      if (index > -1 && index < this._fixedLayers.length - 1) {
+        this._fixedLayers.splice(index, 1);
+        this._fixedLayers.push(layer);
       }
 
     } else {
-      let index = this.layers.indexOf(layer);
-      if (index > -1 && index < this.layers.length - 1) {
-        this.layers.splice(index, 1);
-        this.layers.push(layer);
+      let index = this._layers.indexOf(layer);
+      if (index > -1 && index < this._layers.length - 1) {
+        this._layers.splice(index, 1);
+        this._layers.push(layer);
       }
     }
   }
 
   backward(layer: Layer) {
     if (layer.fixed) {
-      let index = this.fixedLayers.indexOf(layer);
-      if (index > 0) this.fixedLayers.splice(index - 1, 2, this.fixedLayers[index], this.fixedLayers[index - 1]);
+      let index = this._fixedLayers.indexOf(layer);
+      if (index > 0) this._fixedLayers.splice(index - 1, 2, this._fixedLayers[index], this._fixedLayers[index - 1]);
 
     } else {
-      let index = this.layers.indexOf(layer);
-      if (index > 0) this.layers.splice(index - 1, 2, this.layers[index], this.layers[index - 1]);
+      let index = this._layers.indexOf(layer);
+      if (index > 0) this._layers.splice(index - 1, 2, this._layers[index], this._layers[index - 1]);
     }
   }
 
   toback(layer: Layer) {
     if (layer.fixed) {
-      let index = this.fixedLayers.indexOf(layer);
+      let index = this._fixedLayers.indexOf(layer);
       if (index > 0) {
-        this.fixedLayers.splice(index, 1);
-        this.fixedLayers.unshift(layer);
+        this._fixedLayers.splice(index, 1);
+        this._fixedLayers.unshift(layer);
       }
 
     } else {
-      let index = this.layers.indexOf(layer);
+      let index = this._layers.indexOf(layer);
       if (index > 0) {
-        this.layers.splice(index, 1);
-        this.layers.unshift(layer);
+        this._layers.splice(index, 1);
+        this._layers.unshift(layer);
       }
     }
+  }
+
+  private resize() {
+    let clientRect = state.canvas.getBoundingClientRect();
+    state.canvas.width = clientRect.width;
+    state.canvas.height = clientRect.height;
+    this._size = new Size(clientRect.width, clientRect.height);
+    this._viewSize = this._size.divide(state.scale);
+    this._center = new Vec(0, 0).center(this._size);
+    state.translate = this._center;
+    this._viewCenter = state.translate.center(this._viewSize);
+  }
+
+  private triggerEvent(event: string, e: MouseEvent) {
+    if (event === 'mouseup' && this._panning) return this._panning = false;
+
+    for (let i = this._fixedLayers.length - 1; i > -1; i--)
+      if (this._fixedLayers[i].onEvent(event, e)) return;
+    for (let i = this._layers.length - 1; i > -1; i--)
+      if (this._layers[i].onEvent(event, e)) return;
+
+    if (event === 'mousedown') this._panning = true;
+  }
+
+  private init() {
+    state.canvas.addEventListener('mousemove', e => {
+      if (this._panning && this._mousedown) {
+        state.translate = state.translate.add(e.movementX, e.movementY);
+        this._viewCenter = state.translate.center(this._viewSize);
+
+      } else {
+        this.triggerEvent('mousemove', e);
+      }
+    });
+
+    state.canvas.addEventListener('mousedown', e => {
+      this._mousedown = new Vec(e.offsetX, e.offsetY);
+      this._viewMousedown = this._mousedown.divide(state.scale).getVecFrom(state.translate.divide(state.scale));
+      this._mousedownDir = state.translate.getVecFrom(this._viewMousedown);
+      this.triggerEvent('mousedown', e);
+    });
+
+    state.canvas.addEventListener('mouseup', e => {
+      this.triggerEvent('mouseup', e);
+      this._mousedown = null;
+      this._mousedownDir = null;
+    });
+
+    state.canvas.addEventListener('mousewheel', (e: any) => {
+      let scale = state.scale + (e.wheelDeltaY * 0.01);
+      state.scale = scale <= 0.1 ? 0.1 : (scale >= 5 ? 5 : scale);
+      this._viewSize = this._size.divide(state.scale);
+      this._viewCenter = state.translate.center(this._viewSize);
+    });
+
+    window.addEventListener('resize', () => {
+      this.resize();
+    });
   }
 
   protected drawAxis() {
@@ -200,7 +214,7 @@ export class Space {
 
   frame() {
     state.ctx.beginPath()
-    state.ctx.rect(-100000, -100000, 200000, 200000);
+    state.ctx.rect(0, 0, this._size.w, this._size.h);
     state.ctx.fillStyle = this.options.bgc;
     state.ctx.fill();
     state.ctx.fillStyle = state.style.fill;
@@ -208,50 +222,49 @@ export class Space {
     state.ctx.save();
     state.ctx.translate(state.translate.x, state.translate.y);
     state.ctx.scale(state.scale, state.scale);
+
     if (this.options.axis) this.drawAxis();
-    for (let layer of this.layers) layer.draw();
+    for (let layer of this._layers) layer.draw();
     state.ctx.restore();
-    for (let layer of this.fixedLayers) layer.draw();
+    for (let layer of this._fixedLayers) layer.draw();
   }
 
-  protected draw(tick: number) {
+  protected draw(time: number) {
+    if (time - lastFrameTime < frameMinTime) {
+      window.requestAnimationFrame(time => this.draw(time));
+      return;
+    }
+    lastFrameTime = time;
     this.frame();
-    this.animationHandle = window.requestAnimationFrame(tick => this.draw(tick));
+    this._animationHandle = window.requestAnimationFrame(time => this.draw(time));
   }
 
   render() {
-    if (!!this.animationHandle) return;
-    this.animationHandle = window.requestAnimationFrame(tick => this.draw(tick));
+    if (!!this._animationHandle) return;
+    this._animationHandle = window.requestAnimationFrame(time => this.draw(time));
   }
 
-  stopRender() {
-    window.cancelAnimationFrame(this.animationHandle);
-    this.animationHandle = null;
+  pause() {
+    window.cancelAnimationFrame(this._animationHandle);
+    this._animationHandle = null;
   }
 
   resetTransform() {
     state.ctx.transform(1, 0, 0, 1, 0, 0);
-    state.translate = this.center;
+    state.translate = this._center;
     state.scale = 1;
   }
 
   clear(stopRender = true, resetTransform = true) {
-    for (let layer of this.layers) layer.destroy();
-    this.layers = [];
-    for (let layer of this.fixedLayers) layer.destroy();
-    this.fixedLayers = [];
+    for (let layer of this._layers) layer.destroy();
+    this._layers = [];
+    for (let layer of this._fixedLayers) layer.destroy();
+    this._fixedLayers = [];
     resetTransform && this.resetTransform();
-    if (!this.animationHandle || !stopRender) return;
-    window.cancelAnimationFrame(this.animationHandle);
-    this.animationHandle = null;
+    if (!this._animationHandle || !stopRender) return;
+    window.cancelAnimationFrame(this._animationHandle);
+    this._animationHandle = null;
     this.frame();
-  }
-
-  zoom(amount?: number): number | void {
-    if (amount === undefined) return state.scale;
-
-    let scale = state.scale + amount;
-    state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
   }
 
   origin(pos?: Vec) {

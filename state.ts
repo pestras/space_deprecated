@@ -24,8 +24,6 @@ export interface State {
   ctx: CanvasRenderingContext2D,
   translate: Vec;
   scale: number;
-  panMode: boolean;
-  zoomMode: boolean;
   active: string;
   style: Style;
 }
@@ -35,8 +33,6 @@ export const state: State = {
   ctx: null,
   translate: null,
   scale: 1,
-  panMode: false,
-  zoomMode: false,
   active: null,
   style: {
     fill: '#FF5566',

@@ -1,6 +1,6 @@
 {
   "name": "@pestras/space",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Drawing library based on html canvas apis",
   "main": "index.js",
   "types": "index.ts",

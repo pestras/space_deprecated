@@ -69,6 +69,30 @@ export class Size {
     this._h = Math.abs(val);
   }
 
+  center(pos = new Vec(0,0)) {
+    return pos.add(new Vec(this._w / 2, this._h / 2));
+  }
+
+  multiply(factor: number) {
+    return new Size(this._w * factor, this._h * factor);
+  }
+
+  divide(factor: number) {
+    return new Size(this._w / factor, this._h / factor);
+  }
+
+  add(amount: number): Size
+  add(size: Size): Size
+  add(size: Size | number) {
+    return typeof size === 'number' ? new Size(this._w + size, this._h + size) : new Size(this._w + size.w, this._h + size.h);
+  }
+
+  sub(amount: number): Size
+  sub(size: Size): Size
+  sub(size: Size | number) {
+    return typeof size === 'number' ? new Size(this._w - size, this._h - size) : new Size(this._w - size.w, this._h - size.h);
+  }
+
   equals(size: Size) {
     return this.w === size.w && this.h === size.h;
   }
@@ -152,6 +176,14 @@ export class Vec {
     return new Vec(x.x + this._x, x.y + this._y);
   }
 
+  divide(factor: number) {
+    return new Vec(this._x / factor, this._y / factor);
+  }
+
+  multiply(factor: number) {
+    return new Vec(this._x * factor, this._y * factor);
+  }
+
   opposite() {
     return new Vec(-this._x, -this.y);
   }
@@ -182,6 +214,10 @@ export class Vec {
 
   match(point: Vec) {
     return this.x === point.x && this.y === point.y;
+  }
+
+  center(size: Size) {
+    return this.add(size.w / 2, size.h / 2);
   }
 
   clone() {

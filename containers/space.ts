@@ -37,6 +37,7 @@ export class Space {
     if (!state.canvas) return;
     state.ctx = state.canvas.getContext('2d');
     state.canvas.style.width = state.canvas.style.height = "100%";
+    state.scale = 1;
     framePerSecond = options.frameRate || this.options.frameRate;
     frameMinTime = (1000 / 60) * (60 / framePerSecond) - (1000 / 60) * 0.5;
     this.resize();
@@ -178,11 +179,13 @@ export class Space {
     });
 
     state.canvas.addEventListener('mousewheel', (e: any) => {
+      e.preventDefault();
       let scale = state.scale + (e.wheelDeltaY * 0.01);
       state.scale = scale <= 0.1 ? 0.1 : (scale >= 5 ? 5 : scale);
       this._viewSize = this._size.divide(state.scale);
       this._viewCenter = state.translate.center(this._viewSize);
-    });
+      return false;
+    }, false);
 
     window.addEventListener('resize', () => {
       this.resize();

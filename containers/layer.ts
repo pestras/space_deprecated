@@ -1,6 +1,6 @@
 import { Unique } from 'tools-box/unique';
 import { Shape } from '../geometery/shape';
-import { state } from '../state';
+import { ISpace } from '../space.interface';
 
 export class Layer {
   protected _fixed: boolean;
@@ -8,7 +8,7 @@ export class Layer {
   protected shapes: Shape[] = [];
   visible = true;
 
-  constructor(fixed = false) {
+  constructor(protected space: ISpace, fixed = false) {
     this._fixed = fixed;
   }
 
@@ -16,7 +16,7 @@ export class Layer {
 
   onEvent(event: string, e: MouseEvent) {
     for (let i = this.shapes.length - 1; i > -1; i--) {
-      if (!this.shapes[i].actionable || (state.active && state.active !== this.shapes[i].id)) continue;
+      if (!this.shapes[i].actionable || (this.space.active && this.space.active !== this.shapes[i].id)) continue;
       if (event === 'mousemove') {
         if (this.shapes[i].mousemoveHandler(e)) return true;
       } else if (event === "mousedown") {
@@ -87,7 +87,7 @@ export class Layer {
   }
 
   draw() {
-    if (!this.visible || !state.ctx) return;
+    if (!this.visible || !this.space.ctx) return;
 
     for (let shape of this.shapes)
       shape.draw();

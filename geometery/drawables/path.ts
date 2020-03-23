@@ -1,6 +1,6 @@
 import { Shape } from '../shape';
 import { Vec, Angle } from '../measure';
-import { state } from '../../state';
+import { ISpace } from '../../space.interface';
 
 export type Rel = 'r' | 'a' | 's';
 export type LineBlock = ['l', [Rel, Vec]];
@@ -13,8 +13,8 @@ export class Path extends Shape {
   protected _blocks: PathBlocks;
   close = false;
 
-  constructor(position: Vec, ...blocks: PathBlocks) {
-    super();
+  constructor(space: ISpace, position: Vec, ...blocks: PathBlocks) {
+    super(space);
 
     this._blocks = blocks || [];
     this.pos = position;
@@ -24,7 +24,7 @@ export class Path extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     this._path.moveTo(this.absPos.x, this.absPos.y);
     let lastVec = this.pos;
     let to: Vec;

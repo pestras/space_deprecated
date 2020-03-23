@@ -1,6 +1,6 @@
 import { Shape } from '../shape';
 import { Vec, Size } from '../measure';
-import { state } from '../../state';
+import { ISpace } from '../../space.interface';
 
 export class Triangle extends Shape {
   protected _p1: Vec;
@@ -8,11 +8,12 @@ export class Triangle extends Shape {
   protected _p3: Vec;
 
   constructor(
+    space: ISpace,
     p1: Vec,
     p2: Vec,
     p3: Vec
   ) {
-    super();
+    super(space);
     this._p1 = p1.clone();
     this._p2 = p2.clone();
     this._p3 = p3.clone();
@@ -64,7 +65,7 @@ export class Triangle extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     let p1 = this.absP1;
     let p2 = this.absP2;
     let p3 = this.absP3;

@@ -1,14 +1,14 @@
 import { Shape } from '../shape';
 import { Vec, FlexSize, Size } from '../measure';
-import { state } from '../../state';
+import { ISpace } from '../../space.interface';
 
 export class Box extends Shape {
   protected _shapes: Shape[] = [];
   protected _padding: [number, number, number, number] = [0, 0, 0, 0];
   protected _flexSize: FlexSize;
 
-  constructor(position: Vec, size = new FlexSize('auto', 'auto')) {
-    super();
+  constructor(space: ISpace, position: Vec, size = new FlexSize('auto', 'auto')) {
+    super(space);
 
     this._flexSize = size;
     this.pos = position;
@@ -68,7 +68,7 @@ export class Box extends Shape {
 
   make() {
     this.update();
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     let size = this.size;
 
     if (this._style.radius > 0) {

@@ -1,8 +1,8 @@
 import { Shape } from '../shape';
 import { Vec, Size } from '../measure';
-import { state } from '../../state';
 import { BehaviorSubject } from 'rxjs';
 import { filter } from 'rxjs/operators';
+import { ISpace } from '../../space.interface';
 
 export class Eclipse extends Shape {  
   protected radiusXBS = new BehaviorSubject<number>(null);
@@ -11,11 +11,12 @@ export class Eclipse extends Shape {
   readonly radiusY$ = this.radiusYBS.pipe(filter(radius => !!radius));
 
   constructor(
+    space: ISpace,
     position: Vec,
     radiusX: number,
     radiusY: number
   ) {
-    super();
+    super(space);
     this.radiusXBS.next(radiusX);
     this.radiusYBS.next(radiusY);
     this.pos = position;
@@ -47,7 +48,7 @@ export class Eclipse extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     let center = this.absCenter;
     this._path.ellipse(center.x, center.y, this.radiusX, this.radiusY, 0, 0, 2 * Math.PI);
   }

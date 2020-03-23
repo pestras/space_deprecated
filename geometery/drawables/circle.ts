@@ -1,8 +1,8 @@
 import { Shape } from '../shape';
 import { Vec, Size } from '../measure';
-import { state } from '../../state';
 import { BehaviorSubject } from 'rxjs';
 import { filter } from 'rxjs/operators';
+import { ISpace } from '../../space.interface';
 
 export class Circle extends Shape {  
   // position observer
@@ -10,10 +10,11 @@ export class Circle extends Shape {
   readonly radius$ = this.radiusBS.pipe(filter(radius => !!radius));
 
   constructor(
+    space: ISpace,
     position: Vec,
     radius: number
   ) {
-    super();
+    super(space);
     this.radiusBS.next(radius);
     this.pos = position;
   }
@@ -41,7 +42,7 @@ export class Circle extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     let center = this.absCenter;
     this._path.arc(center.x, center.y, this.radius, 0, 2 * Math.PI);
   }

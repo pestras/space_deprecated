@@ -1,12 +1,12 @@
 import { Shape } from '../shape';
-import { state } from '../../state';
 import { Vec } from '../measure';
+import { ISpace } from '../../space.interface';
 
 export class Line extends Shape {
   protected _end: Vec;
 
-  constructor(start: Vec, end: Vec) {
-    super();
+  constructor(space: ISpace,start: Vec, end: Vec) {
+    super(space);
 
     this._end = end.clone();
     this.pos = start;
@@ -28,7 +28,7 @@ export class Line extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     this._path.moveTo(this.absPos.x, this.absPos.y);
     this._path.lineTo(this._end.x, this._end.y);
   }

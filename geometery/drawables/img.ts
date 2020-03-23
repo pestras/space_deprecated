@@ -1,6 +1,6 @@
 import { Shape } from '../shape';
 import { Vec, Size, FlexSize } from '../measure';
-import { state } from '../../state';
+import { ISpace } from '../../space.interface';
 
 export type ImageMode = 'contain' | 'cover start' | 'cover center' | 'cover end';
 
@@ -14,12 +14,13 @@ export class Img extends Shape {
   protected _flexSize: FlexSize;
 
   constructor(
+    space: ISpace,
     src: string,
     position: Vec,
     size?: FlexSize,
     mode?: ImageMode
   ) {
-    super();
+    super(space);
     
     this._image = new Image();
     this._image.onload = () => this.onLoad();
@@ -122,7 +123,7 @@ export class Img extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     let size = this.size;
 
     if (this._style.radius > 0) {
@@ -145,24 +146,24 @@ export class Img extends Shape {
   draw() {
     if (!this.visible || !this._loaded) return;
 
-    state.ctx.save();
+    this.space.ctx.save();
     if (this._clip) this._clip.makeClip();
     else {
       this.make();
-      state.ctx.clip(this._path);
+      this.space.ctx.clip(this._path);
     }
 
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
 
     if (this._style.shadow) {
-      state.ctx.shadowOffsetX = this._style.shadow[0];
-      state.ctx.shadowOffsetY = this._style.shadow[1];
-      state.ctx.shadowBlur = this._style.shadow[2];
-      state.ctx.shadowColor = this._style.shadow[3];
+      this.space.ctx.shadowOffsetX = this._style.shadow[0];
+      this.space.ctx.shadowOffsetY = this._style.shadow[1];
+      this.space.ctx.shadowBlur = this._style.shadow[2];
+      this.space.ctx.shadowColor = this._style.shadow[3];
     }
 
-    state.ctx.globalAlpha = this._style.alfa;
-    state.ctx.drawImage(
+    this.space.ctx.globalAlpha = this._style.alfa;
+    this.space.ctx.drawImage(
       this._image,
       this._cropPos.x,
       this._cropPos.y,
@@ -174,18 +175,18 @@ export class Img extends Shape {
       this.size.h
     );
 
-    state.ctx.fillStyle = "transparent";
-    state.ctx.fill(this._path);
+    this.space.ctx.fillStyle = "transparent";
+    this.space.ctx.fill(this._path);
 
     if (this._style.strokeStyle && this._style.lineWidth > 0) {
-      state.ctx.strokeStyle = this._style.strokeStyle;
-      state.ctx.lineWidth = this._style.lineWidth;
-      state.ctx.lineCap = this._style.lineCap;
-      state.ctx.lineJoin = this._style.lineJoin;
-      !!this._style.lineDash && state.ctx.setLineDash(this._style.lineDash);
-      state.ctx.stroke(this._path);
+      this.space.ctx.strokeStyle = this._style.strokeStyle;
+      this.space.ctx.lineWidth = this._style.lineWidth;
+      this.space.ctx.lineCap = this._style.lineCap;
+      this.space.ctx.lineJoin = this._style.lineJoin;
+      !!this._style.lineDash && this.space.ctx.setLineDash(this._style.lineDash);
+      this.space.ctx.stroke(this._path);
     }
 
-    state.ctx.restore();
+    this.space.ctx.restore();
   }
 }

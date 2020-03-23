@@ -1,5 +1,5 @@
 import { Layer } from './layer';
-import { state, Style } from '../state';
+import { Style } from '../space.interface';
 import { Vec, Size } from '../geometery/measure';
 
 let framePerSecond: 60 | 30 | 20 | 10 | 6 | 5 | 4 | 3 | 2 | 1;
@@ -13,6 +13,11 @@ export interface SpaceOptions {
 }
 
 export class Space {
+  protected _canvas: HTMLCanvasElement;
+  protected _ctx: CanvasRenderingContext2D;
+  protected _translate: Vec;
+  protected _scale: number;
+  protected _active: string;
   protected _layers: Layer[] = [];
   protected _fixedLayers: Layer[] = [];
   protected _animationHandle: number;
@@ -24,6 +29,24 @@ export class Space {
   protected _viewCenter: Vec;
   protected _size: Size;
   protected _viewSize: Size;
+  protected _style: Style = {
+    fill: '#FF5566',
+    strokeStyle: '#222222',
+    lineWidth: 0,
+    lineJoin: "round",
+    lineCap: "round",
+    fontSize: 16,
+    fontFamily: 'Arial',
+    fontColor: '#555555',
+    lineGap: 5,
+    textOverflow: 'nowrap',
+    radius: 0,
+    textAlign: 'left',
+    textBaseline: 'alphabetic',
+    shadow: null,
+    alfa: 1,
+    lineDash: []
+  };
   readonly options: SpaceOptions = {
     axis: true,
     bgc: '#F6F6F6',
@@ -32,12 +55,12 @@ export class Space {
 
   constructor(canvasId: string, options: SpaceOptions = {}, style: Style = {}) {
     Object.assign(this.options, options);
-    Object.assign(state.style, style);
-    state.canvas = <HTMLCanvasElement>document.getElementById(canvasId);
-    if (!state.canvas) return;
-    state.ctx = state.canvas.getContext('2d');
-    state.canvas.style.width = state.canvas.style.height = "100%";
-    state.scale = 1;
+    Object.assign(this._style, style);
+    this._canvas = <HTMLCanvasElement>document.getElementById(canvasId);
+    if (!this._canvas) return;
+    this._ctx = this._canvas.getContext('2d');
+    this._canvas.style.width = this._canvas.style.height = "100%";
+    this._scale = 1;
     framePerSecond = options.frameRate || this.options.frameRate;
     frameMinTime = (1000 / 60) * (60 / framePerSecond) - (1000 / 60) * 0.5;
     this.resize();
@@ -49,6 +72,13 @@ export class Space {
   get viewCenter() { return this._viewCenter.clone(); }
   get size() { return this._size.clone(); }
   get viewSize() { return this._viewSize.clone(); }
+  get canvas() { return this._canvas; }
+  get ctx() { return this._ctx; }
+  get scale() { return this._scale; }
+  get translate() { return this._translate.clone(); }
+  get style() { return Object.assign({}, this._style); }
+  get active() { return this._active; }
+  set active(val : string) { this._active = val; }
 
   addLayers(...layers: Layer[]) {
     for (let layer of layers) {
@@ -137,14 +167,14 @@ export class Space {
   }
 
   private resize() {
-    let clientRect = state.canvas.getBoundingClientRect();
-    state.canvas.width = clientRect.width;
-    state.canvas.height = clientRect.height;
+    let clientRect = this._canvas.getBoundingClientRect();
+    this._canvas.width = clientRect.width;
+    this._canvas.height = clientRect.height;
     this._size = new Size(clientRect.width, clientRect.height);
-    this._viewSize = this._size.divide(state.scale);
+    this._viewSize = this._size.divide(this._scale);
     this._center = new Vec(0, 0).center(this._size);
-    state.translate = this._center;
-    this._viewCenter = state.translate.center(this._viewSize);
+    this._translate = this._center;
+    this._viewCenter = this._translate.center(this._viewSize);
   }
 
   private triggerEvent(event: string, e: MouseEvent) {
@@ -159,35 +189,35 @@ export class Space {
   }
 
   private init() {
-    state.canvas.addEventListener('mousemove', e => {
+    this._canvas.addEventListener('mousemove', e => {
       if (this._panning && this._mousedown) {
-        state.translate = state.translate.add(e.movementX, e.movementY);
-        this._viewCenter = state.translate.center(this._viewSize);
+        this._translate = this._translate.add(e.movementX, e.movementY);
+        this._viewCenter = this._translate.center(this._viewSize);
 
       } else {
         this.triggerEvent('mousemove', e);
       }
     });
 
-    state.canvas.addEventListener('mousedown', e => {
+    this._canvas.addEventListener('mousedown', e => {
       this._mousedown = new Vec(e.offsetX, e.offsetY);
-      this._viewMousedown = this._mousedown.divide(state.scale).getVecFrom(state.translate.divide(state.scale));
-      this._mousedownDir = state.translate.getVecFrom(this._viewMousedown);
+      this._viewMousedown = this._mousedown.divide(this._scale).getVecFrom(this._translate.divide(this._scale));
+      this._mousedownDir = this._translate.getVecFrom(this._viewMousedown);
       this.triggerEvent('mousedown', e);
     });
 
-    state.canvas.addEventListener('mouseup', e => {
+    this._canvas.addEventListener('mouseup', e => {
       this.triggerEvent('mouseup', e);
       this._mousedown = null;
       this._mousedownDir = null;
     });
 
-    state.canvas.addEventListener('mousewheel', (e: any) => {
+    this._canvas.addEventListener('mousewheel', (e: any) => {
       e.preventDefault();
-      let scale = state.scale + (e.wheelDeltaY * 0.01);
-      state.scale = scale <= 0.1 ? 0.1 : (scale >= 5 ? 5 : scale);
-      this._viewSize = this._size.divide(state.scale);
-      this._viewCenter = state.translate.center(this._viewSize);
+      let scale = this._scale + (e.wheelDeltaY * 0.01);
+      this._scale = scale <= 0.1 ? 0.1 : (scale >= 5 ? 5 : scale);
+      this._viewSize = this._size.divide(this._scale);
+      this._viewCenter = this._translate.center(this._viewSize);
       return false;
     }, false);
 
@@ -197,42 +227,42 @@ export class Space {
   }
 
   protected drawAxis() {
-    state.ctx.save();
-    state.ctx.beginPath();
-    state.ctx.fillStyle = 'transparent';
-    state.ctx.strokeStyle = "#EEEEEE";
-    state.ctx.lineWidth = 1 / state.scale;
-    state.ctx.moveTo(-100000, 0);
-    state.ctx.lineTo(100000, 0);
-    state.ctx.closePath();
-    state.ctx.stroke();
-    state.ctx.strokeStyle = "#EEEEEE";
-    state.ctx.moveTo(0, -100000);
-    state.ctx.lineTo(0, 100000);
-    state.ctx.closePath();
-    state.ctx.stroke();
-    state.ctx.lineWidth = 0;
-    state.ctx.fillStyle = '#CCCCCC';
-    state.ctx.arc(0, 0, 2 / state.scale, 0, 2 * Math.PI);
-    state.ctx.closePath();
-    state.ctx.fill();
-    state.ctx.restore();
+    this._ctx.save();
+    this._ctx.beginPath();
+    this._ctx.fillStyle = 'transparent';
+    this._ctx.strokeStyle = "#EEEEEE";
+    this._ctx.lineWidth = 1 / this._scale;
+    this._ctx.moveTo(-100000, 0);
+    this._ctx.lineTo(100000, 0);
+    this._ctx.closePath();
+    this._ctx.stroke();
+    this._ctx.strokeStyle = "#EEEEEE";
+    this._ctx.moveTo(0, -100000);
+    this._ctx.lineTo(0, 100000);
+    this._ctx.closePath();
+    this._ctx.stroke();
+    this._ctx.lineWidth = 0;
+    this._ctx.fillStyle = '#CCCCCC';
+    this._ctx.arc(0, 0, 2 / this._scale, 0, 2 * Math.PI);
+    this._ctx.closePath();
+    this._ctx.fill();
+    this._ctx.restore();
   }
 
   frame() {
-    state.ctx.beginPath()
-    state.ctx.rect(0, 0, this._size.w, this._size.h);
-    state.ctx.fillStyle = this.options.bgc;
-    state.ctx.fill();
-    state.ctx.fillStyle = state.style.fill;
+    this._ctx.beginPath()
+    this._ctx.rect(0, 0, this._size.w, this._size.h);
+    this._ctx.fillStyle = this.options.bgc;
+    this._ctx.fill();
+    this._ctx.fillStyle = this._style.fill;
 
-    state.ctx.save();
-    state.ctx.translate(state.translate.x, state.translate.y);
-    state.ctx.scale(state.scale, state.scale);
+    this._ctx.save();
+    this._ctx.translate(this._translate.x, this._translate.y);
+    this._ctx.scale(this._scale, this._scale);
 
     if (this.options.axis) this.drawAxis();
     for (let layer of this._layers) layer.draw();
-    state.ctx.restore();
+    this._ctx.restore();
     for (let layer of this._fixedLayers) layer.draw();
   }
 
@@ -257,17 +287,15 @@ export class Space {
   }
 
   zoom(amount?: number) {
-    if (amount === undefined) return state.scale;
-    let scale = state.scale + amount;
-    state.scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
-    this._viewSize = this._size.divide(state.scale);
-    this._viewCenter = state.translate.center(this._viewSize);
+    if (amount === undefined) return this._scale;
+    let scale = this._scale + amount;
+    this._scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
   }
 
   resetTransform() {
-    state.ctx.transform(1, 0, 0, 1, 0, 0);
-    state.translate = this._center;
-    state.scale = 1;
+    this._ctx.transform(1, 0, 0, 1, 0, 0);
+    this._translate = this._center;
+    this._scale = 1;
   }
 
   clear(stopRender = true, resetTransform = true) {
@@ -283,9 +311,9 @@ export class Space {
   }
 
   origin(pos?: Vec) {
-    if (!pos) return state.translate.clone();
+    if (!pos) return this._translate.clone();
 
-    state.ctx.transform(1, 0, 0, 1, 0, 0);
-    state.translate = pos.clone();
+    this._ctx.transform(1, 0, 0, 1, 0, 0);
+    this._translate = pos.clone();
   }
 }

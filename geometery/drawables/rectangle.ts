@@ -1,14 +1,15 @@
 import { Shape } from '../shape';
 import { Vec, Size } from '../measure';
-import { state } from '../../state';
+import { ISpace } from '../../space.interface';
 
 export class Rectangle extends Shape {
 
   constructor(
+    space: ISpace,
     position: Vec,
     size: Size,
   ) {
-    super();
+    super(space);
     this.sizeBS.next(size);
     this.pos = position;
   }
@@ -29,7 +30,7 @@ export class Rectangle extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     let size = this.size;
 
     if (this._style.radius > 0) {

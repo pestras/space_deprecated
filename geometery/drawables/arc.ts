@@ -1,6 +1,6 @@
 import { Shape } from '../shape';
-import { state } from '../../state';
-import { Vec, Size, Angle } from '../measure';
+import { Vec, Angle } from '../measure';
+import { ISpace } from '../../space.interface';
 
 export class Arc extends Shape {
   protected _radius: number;
@@ -8,6 +8,7 @@ export class Arc extends Shape {
   protected _endAngle: Angle;
 
   constructor(
+    space: ISpace,
     position: Vec,
     radius: number,
     startAngle: Angle,
@@ -15,7 +16,7 @@ export class Arc extends Shape {
     public CCW = false,
     public close = false
   ) {
-    super();
+    super(space);
 
     this._radius = radius;
     this._startAngle = startAngle;
@@ -56,7 +57,7 @@ export class Arc extends Shape {
   }
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     this._path.arc(this.absPos.x, this.absPos.y, this._radius, this._startAngle.r, this._endAngle.r, this.CCW);
     if (this.close) this._path.closePath();
   }

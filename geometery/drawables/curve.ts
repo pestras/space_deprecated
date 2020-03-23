@@ -1,6 +1,6 @@
 import { Shape } from '../shape';
 import { Vec } from '../measure';
-import { state } from '../../state';
+import { ISpace } from '../../space.interface';
 
 export class Curve extends Shape {
   protected _c: Vec;
@@ -9,10 +9,10 @@ export class Curve extends Shape {
   protected _endPos: Vec;
   close = false;
 
-  constructor(position: Vec, controlPoint: Vec, endPosition: Vec)
-  constructor(position: Vec, controlPoint1: Vec, controlPoint2: Vec, endPosition: Vec)
-  constructor(position: Vec, controlPoint1: Vec, controlPoint2: Vec, endPosition?: Vec) {
-    super();
+  constructor(space: ISpace,position: Vec, controlPoint: Vec, endPosition: Vec)
+  constructor(space: ISpace,position: Vec, controlPoint1: Vec, controlPoint2: Vec, endPosition: Vec)
+  constructor(space: ISpace,position: Vec, controlPoint1: Vec, controlPoint2: Vec, endPosition?: Vec) {
+    super(space);
 
     if (endPosition) {
       this._c1 = controlPoint1.clone();
@@ -29,7 +29,7 @@ export class Curve extends Shape {
   update() {}
 
   make() {
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
     this._path.moveTo(this.absPos.x, this.absPos.y);
     if (!!this._c) this._path.quadraticCurveTo(this._c.x, this._c.y, this._endPos.x, this._endPos.y);
     else this._path.bezierCurveTo(this._c1.x, this._c1.y, this._c1.x, this._c2.y, this._endPos.x, this._endPos.y);

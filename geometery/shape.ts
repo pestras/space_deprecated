@@ -1,6 +1,6 @@
 import { Subscription, BehaviorSubject, Subject } from 'rxjs';
 import { Unique } from 'tools-box/Unique';
-import { state, Style } from '../state';
+import { ISpace, Style } from '../space.interface';
 import { Vec, Size } from './measure'
 import { filter } from 'rxjs/operators';
 import { MouseCoords } from './mouse-point';
@@ -27,7 +27,7 @@ export abstract class Shape {
   protected _drag = false;
   protected _actionable = true;
 
-  readonly _style = Object.assign({}, state.style);
+  readonly _style = Object.assign({}, this.space.style);
 
   id = Unique.Get();
   draggable = false;
@@ -62,12 +62,12 @@ export abstract class Shape {
   protected dragendBS = new Subject<MouseEvent>();
   readonly dragend$ = this.dragendBS.asObservable();
 
-  constructor() {
+  constructor(protected space: ISpace) {
     this._dragSubs = this.drag$.subscribe(e => {
       if (!this.draggable) return;
       this.pos = this._fixed
         ? new Vec(e.offsetX, e.offsetY).add(this._relVec.opposite())
-        : new MouseCoords(e.offsetX, e.offsetY).toVec().add(this._relVec.opposite());
+        : new MouseCoords(space, e.offsetX, e.offsetY).toVec().add(this._relVec.opposite());
     });
   }
 
@@ -79,12 +79,12 @@ export abstract class Shape {
 
   makeClip() {
     this.make();
-    state.ctx.clip(this._path);
+    this.space.ctx.clip(this._path);
   }
 
   draw(): void {
     if (!this.visible) return;
-    state.ctx.save();
+    this.space.ctx.save();
 
     if (this._clip) this._clip.makeClip();
 
@@ -92,38 +92,38 @@ export abstract class Shape {
     this.make();
 
     if (this._style.shadow) {
-      state.ctx.shadowOffsetX = this._style.shadow[0];
-      state.ctx.shadowOffsetY = this._style.shadow[1];
-      state.ctx.shadowBlur = this._style.shadow[2];
-      state.ctx.shadowColor = this._style.shadow[3];
+      this.space.ctx.shadowOffsetX = this._style.shadow[0];
+      this.space.ctx.shadowOffsetY = this._style.shadow[1];
+      this.space.ctx.shadowBlur = this._style.shadow[2];
+      this.space.ctx.shadowColor = this._style.shadow[3];
     }
 
-    state.ctx.globalAlpha = this._style.alfa;
+    this.space.ctx.globalAlpha = this._style.alfa;
 
     if (this._style.fill) {
-      state.ctx.fillStyle = this._style.fill;
-      state.ctx.fill(this._path);
+      this.space.ctx.fillStyle = this._style.fill;
+      this.space.ctx.fill(this._path);
     }
 
     if (this._style.strokeStyle && this._style.lineWidth > 0) {
-      state.ctx.strokeStyle = this._style.strokeStyle;
-      state.ctx.lineWidth = this._style.lineWidth;
-      state.ctx.lineCap = this._style.lineCap;
-      state.ctx.lineJoin = this._style.lineJoin;
-      !!this._style.lineDash && state.ctx.setLineDash(this._style.lineDash);
-      state.ctx.stroke(this._path);
+      this.space.ctx.strokeStyle = this._style.strokeStyle;
+      this.space.ctx.lineWidth = this._style.lineWidth;
+      this.space.ctx.lineCap = this._style.lineCap;
+      this.space.ctx.lineJoin = this._style.lineJoin;
+      !!this._style.lineDash && this.space.ctx.setLineDash(this._style.lineDash);
+      this.space.ctx.stroke(this._path);
     }
 
-    state.ctx.restore();
+    this.space.ctx.restore();
   }
 
   protected isPointIn(point: Vec): boolean {
     return this._fixed
-      ? state.ctx.isPointInPath(this._path, point.x, point.y)
-      : state.ctx.isPointInPath(
+      ? this.space.ctx.isPointInPath(this._path, point.x, point.y)
+      : this.space.ctx.isPointInPath(
       this._path,
-      (point.x / state.scale) - (state.translate.x / state.scale),
-      (point.y / state.scale) - (state.translate.y / state.scale)
+      (point.x / this.space.scale) - (this.space.translate.x / this.space.scale),
+      (point.y / this.space.scale) - (this.space.translate.y / this.space.scale)
     );
   }
 
@@ -147,7 +147,7 @@ export abstract class Shape {
     this._actionable = val;
     if (!val) {
       this.draggable = false;
-      if (state.active === this.id) state.active = null;
+      if (this.space.active === this.id) this.space.active = null;
     }
   }
 
@@ -213,7 +213,7 @@ export abstract class Shape {
   mousedownHandler(e: MouseEvent): boolean {
     if (!e) return false;
     if (this._mousein) {
-      state.active = this.id;
+      this.space.active = this.id;
       this._dragStart = true;
       this.dragstartBS.next(e);
       return true;
@@ -229,7 +229,7 @@ export abstract class Shape {
   mouseupHandler(e: MouseEvent) {
     if (!e) return false;
     if (this._dragStart) {
-      state.active = null;
+      this.space.active = null;
       if (this.drag) {
         this._dragStart = this._drag = false;
         this.dragendBS.next(e);

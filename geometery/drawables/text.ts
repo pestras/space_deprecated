@@ -1,6 +1,6 @@
 import { Shape } from '../shape';
-import { state, Style } from '../../state';
 import { Vec, Size, FlexSize } from '../measure';
+import { ISpace, Style } from '../../space.interface';
 
 export class TextBox extends Shape {
   protected _content: string;
@@ -9,11 +9,12 @@ export class TextBox extends Shape {
   protected _lineHeight: number;
 
   constructor(
+    space: ISpace,
     content: string,
     position: Vec,
     size: FlexSize
   ) {
-    super();
+    super(space);
     this._content = content;
     this._flexSize = size.clone();
     if (size.h === 'auto') this._style.textOverflow = 'wrap';
@@ -24,7 +25,7 @@ export class TextBox extends Shape {
   protected update() {
     this._lines = this.prepareContent();
     let size = new Size(
-      this._flexSize.w === 'auto' ? state.ctx.measureText(this._lines[0]).width : this._flexSize.w,
+      this._flexSize.w === 'auto' ? this.space.ctx.measureText(this._lines[0]).width : this._flexSize.w,
       this._flexSize.h === 'auto' ? this._lineHeight * this._lines.length : this._flexSize.h
     );
 
@@ -51,7 +52,7 @@ export class TextBox extends Shape {
     let index = 0;
 
     for (let char of chars) {
-      if (state.ctx.measureText(line + char).width / 0.65 > <number>this._flexSize.w - minus) break;
+      if (this.space.ctx.measureText(line + char).width / 0.65 > <number>this._flexSize.w - minus) break;
 
       line += char;
       index++;
@@ -66,7 +67,7 @@ export class TextBox extends Shape {
     let index = 0;
 
     for (let word of words) {
-      if ((state.ctx.measureText(line + (!!index ? ' ' : '') + word).width) / 0.65 > <number>this._flexSize.w) break;
+      if ((this.space.ctx.measureText(line + (!!index ? ' ' : '') + word).width) / 0.65 > <number>this._flexSize.w) break;
 
       line += (!!index ? ' ' : '') + word;
       index++;
@@ -127,52 +128,52 @@ export class TextBox extends Shape {
   draw() {
     if (!this.visible) return;
     
-    state.ctx.save();
+    this.space.ctx.save();
 
     if (this._clip) this._clip.makeClip();
     
-    state.ctx.beginPath();
+    this.space.ctx.beginPath();
 
-    state.ctx.font = `${this._style.fontSize}px ${this._style.fontFamily}`;
-    state.ctx.textAlign = this._style.textAlign;
-    state.ctx.textBaseline = this._style.textBaseline;
+    this.space.ctx.font = `${this._style.fontSize}px ${this._style.fontFamily}`;
+    this.space.ctx.textAlign = this._style.textAlign;
+    this.space.ctx.textBaseline = this._style.textBaseline;
 
     if (this._style.shadow) {
-      state.ctx.shadowOffsetX = this._style.shadow[0];
-      state.ctx.shadowOffsetY = this._style.shadow[1];
-      state.ctx.shadowBlur = this._style.shadow[2];
-      state.ctx.shadowColor = this._style.shadow[3];
+      this.space.ctx.shadowOffsetX = this._style.shadow[0];
+      this.space.ctx.shadowOffsetY = this._style.shadow[1];
+      this.space.ctx.shadowBlur = this._style.shadow[2];
+      this.space.ctx.shadowColor = this._style.shadow[3];
     }
 
     if (this._style.fontColor) {
-      state.ctx.fillStyle = this._style.fontColor;
+      this.space.ctx.fillStyle = this._style.fontColor;
     
       for (let i = 0; i < this._lines.length; i++) {
         let y = this._corners[0].y + this._lineHeight * (i + 1);
-        state.ctx.fillText(this._lines[i], this._corners[0].x, y);
+        this.space.ctx.fillText(this._lines[i], this._corners[0].x, y);
       }
     }
 
     if (this._style.strokeStyle && this._style.lineWidth > 0) {
-      state.ctx.strokeStyle = this._style.strokeStyle;
-      state.ctx.lineWidth = this._style.lineWidth;
-      state.ctx.lineCap = this._style.lineCap;
-      state.ctx.lineJoin = this._style.lineJoin;      
-      !!this._style.lineDash && state.ctx.setLineDash(this._style.lineDash);
+      this.space.ctx.strokeStyle = this._style.strokeStyle;
+      this.space.ctx.lineWidth = this._style.lineWidth;
+      this.space.ctx.lineCap = this._style.lineCap;
+      this.space.ctx.lineJoin = this._style.lineJoin;      
+      !!this._style.lineDash && this.space.ctx.setLineDash(this._style.lineDash);
 
       for (let i = 0; i < this._lines.length; i++) {
         let y = this._corners[0].y + this._lineHeight * (i + 1);
-        state.ctx.strokeText(this._lines[i], this._corners[0].x, y, this.size.w);
+        this.space.ctx.strokeText(this._lines[i], this._corners[0].x, y, this.size.w);
       }
     }
 
-    state.ctx.restore();
-    state.ctx.save();
-    state.ctx.beginPath();
+    this.space.ctx.restore();
+    this.space.ctx.save();
+    this.space.ctx.beginPath();
     
     this._path.rect(this.absPos.x, this.absPos.y, this.size.w, this.size.h);
-    state.ctx.fillStyle = "transparent";
-    state.ctx.fill(this._path);
-    state.ctx.restore();
+    this.space.ctx.fillStyle = "transparent";
+    this.space.ctx.fill(this._path);
+    this.space.ctx.restore();
   }
 }

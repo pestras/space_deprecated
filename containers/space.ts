@@ -269,7 +269,7 @@ export class Space {
 
   protected draw(time: number) {
     if (time - lastFrameTime < frameMinTime) {
-      window.requestAnimationFrame(time => this.draw(time));
+      this._animationHandle = window.requestAnimationFrame(time => this.draw(time));
       return;
     }
     lastFrameTime = time;
@@ -307,8 +307,8 @@ export class Space {
     resetTransform && this.resetTransform();
     if (!this._animationHandle || !stopRender) return;
     window.cancelAnimationFrame(this._animationHandle);
-    lastFrameTime = 0;
     this._animationHandle = null;
+    lastFrameTime = 0;
     this.frame();
   }
 

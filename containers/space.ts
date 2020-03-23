@@ -63,6 +63,7 @@ export class Space {
     this._scale = 1;
     framePerSecond = options.frameRate || this.options.frameRate;
     frameMinTime = (1000 / 60) * (60 / framePerSecond) - (1000 / 60) * 0.5;
+    lastFrameTime = 0;
     this.resize();
     this.init();
   }
@@ -306,6 +307,7 @@ export class Space {
     resetTransform && this.resetTransform();
     if (!this._animationHandle || !stopRender) return;
     window.cancelAnimationFrame(this._animationHandle);
+    lastFrameTime = 0;
     this._animationHandle = null;
     this.frame();
   }

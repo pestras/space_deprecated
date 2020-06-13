@@ -1,5 +1,5 @@
 import { Subscription, BehaviorSubject, Subject } from 'rxjs';
-import { Unique } from 'tools-box/Unique';
+import { Unique } from '@pestras/toolbox/Unique';
 import { ISpace, Style } from '../space.interface';
 import { Vec, Size } from './measure'
 import { filter } from 'rxjs/operators';

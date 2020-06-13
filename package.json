@@ -1,6 +1,6 @@
 {
   "name": "@pestras/space",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Drawing library based on html canvas apis",
   "main": "index.js",
   "types": "index.ts",
@@ -30,6 +30,6 @@
   },
   "dependencies": {
     "rxjs": "^6.5.4",
-    "tools-box": "^0.1.36"
+    "@pestras/toolbox": "^1.1.6"
   }
 }

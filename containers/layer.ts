@@ -1,4 +1,4 @@
-import { Unique } from 'tools-box/unique';
+import { Unique } from '@pestras/toolbox/unique';
 import { Shape } from '../geometery/shape';
 import { ISpace } from '../space.interface';
 

@@ -2,15 +2,15 @@ import { Layer } from './layer';
 import { Style } from '../space.interface';
 import { Vec, Size } from '../geometery/measure';
 
-let framePerSecond: 60 | 30 | 20 | 10 | 6 | 5 | 4 | 3 | 2 | 1;
-let frameMinTime: number;
-let lastFrameTime = 0
+export type FrameRate = 60 | 30 | 20 | 10 | 6 | 5 | 4 | 3 | 2 | 1;
 
 export interface SpaceOptions {
   axis?: boolean;
   bgc?: string;
-  frameRate?: 60 | 30 | 20 | 10 | 6 | 5 | 4 | 3 | 2 | 1;
+  frameRate?: FrameRate;
 }
+
+let lastFrameTime: number;
 
 export class Space {
   protected _canvas: HTMLCanvasElement;
@@ -61,14 +61,11 @@ export class Space {
     this._ctx = this._canvas.getContext('2d');
     this._canvas.style.width = this._canvas.style.height = "100%";
     this._scale = 1;
-    framePerSecond = options.frameRate || this.options.frameRate;
-    frameMinTime = (1000 / 60) * (60 / framePerSecond) - (1000 / 60) * 0.5;
-    lastFrameTime = 0;
+    this.options.frameRate = options.frameRate || 30;
     this.resize();
     this.init();
   }
-
-  get rendering() { return !!this._animationHandle; }
+  
   get center() { return this._center.clone(); }
   get viewCenter() { return this._viewCenter.clone(); }
   get size() { return this._size.clone(); }
@@ -79,7 +76,7 @@ export class Space {
   get translate() { return this._translate.clone(); }
   get style() { return Object.assign({}, this._style); }
   get active() { return this._active; }
-  set active(val : string) { this._active = val; }
+  set active(val: string) { this._active = val; }
 
   addLayers(...layers: Layer[]) {
     for (let layer of layers) {
@@ -89,6 +86,7 @@ export class Space {
         if (this._layers.indexOf(layer) === -1) this._layers.push(layer);
       }
     }
+    this.draw();
   }
 
   removeLayers(...layers: Layer[]) {
@@ -108,6 +106,7 @@ export class Space {
         }
       }
     }
+    this.draw();
   }
 
   forward(layer: Layer) {
@@ -119,7 +118,7 @@ export class Space {
       let index = this._layers.indexOf(layer);
       if (index > -1 && index < this._layers.length - 1) this._layers.splice(index, 2, this._layers[index + 1], this._layers[index]);
     }
-
+    this.draw();
   }
 
   tofront(layer: Layer) {
@@ -137,6 +136,7 @@ export class Space {
         this._layers.push(layer);
       }
     }
+    this.draw();
   }
 
   backward(layer: Layer) {
@@ -148,6 +148,7 @@ export class Space {
       let index = this._layers.indexOf(layer);
       if (index > 0) this._layers.splice(index - 1, 2, this._layers[index], this._layers[index - 1]);
     }
+    this.draw();
   }
 
   toback(layer: Layer) {
@@ -165,6 +166,7 @@ export class Space {
         this._layers.unshift(layer);
       }
     }
+    this.draw();
   }
 
   private resize() {
@@ -176,17 +178,19 @@ export class Space {
     this._center = new Vec(0, 0).center(this._size);
     this._translate = this._center;
     this._viewCenter = this._translate.center(this._viewSize);
+    this.draw();
   }
 
   private triggerEvent(event: string, e: MouseEvent) {
     if (event === 'mouseup' && this._panning) return this._panning = false;
 
     for (let i = this._fixedLayers.length - 1; i > -1; i--)
-      if (this._fixedLayers[i].onEvent(event, e)) return;
+      if (this._fixedLayers[i].onEvent(event, e)) return this.draw();
     for (let i = this._layers.length - 1; i > -1; i--)
-      if (this._layers[i].onEvent(event, e)) return;
+      if (this._layers[i].onEvent(event, e)) return this.draw();
 
     if (event === 'mousedown') this._panning = true;
+    this.draw();
   }
 
   private init() {
@@ -194,6 +198,8 @@ export class Space {
       if (this._panning && this._mousedown) {
         this._translate = this._translate.add(e.movementX, e.movementY);
         this._viewCenter = this._translate.center(this._viewSize);
+
+        this.draw();
 
       } else {
         this.triggerEvent('mousemove', e);
@@ -219,12 +225,15 @@ export class Space {
       this._scale = scale <= 0.1 ? 0.1 : (scale >= 5 ? 5 : scale);
       this._viewSize = this._size.divide(this._scale);
       this._viewCenter = this._translate.center(this._viewSize);
+      this.draw();
       return false;
     }, false);
 
     window.addEventListener('resize', () => {
       this.resize();
     });
+
+    this.draw();
   }
 
   protected drawAxis() {
@@ -250,7 +259,14 @@ export class Space {
     this._ctx.restore();
   }
 
-  frame() {
+  private ignoreFrame() {
+    let now = Date.now();
+    if (lastFrameTime && (now - lastFrameTime < 1000/this.options.frameRate)) return true;
+    lastFrameTime = now;
+  }
+
+  draw() {
+    if (this.ignoreFrame()) return;
     this._ctx.beginPath()
     this._ctx.rect(0, 0, this._size.w, this._size.h);
     this._ctx.fillStyle = this.options.bgc;
@@ -267,36 +283,18 @@ export class Space {
     for (let layer of this._fixedLayers) layer.draw();
   }
 
-  protected draw(time: number) {
-    if (time - lastFrameTime < frameMinTime) {
-      this._animationHandle = window.requestAnimationFrame(time => this.draw(time));
-      return;
-    }
-    lastFrameTime = time;
-    this.frame();
-    this._animationHandle = window.requestAnimationFrame(time => this.draw(time));
-  }
-
-  render() {
-    if (!!this._animationHandle) return;
-    this._animationHandle = window.requestAnimationFrame(time => this.draw(time));
-  }
-
-  pause() {
-    window.cancelAnimationFrame(this._animationHandle);
-    this._animationHandle = null;
-  }
-
   zoom(amount?: number) {
     if (amount === undefined) return this._scale;
     let scale = this._scale + amount;
     this._scale = scale < 0.1 ? 0.1 : scale > 5 ? 5 : scale;
+    this.draw();
   }
 
   resetTransform() {
     this._ctx.transform(1, 0, 0, 1, 0, 0);
     this._translate = this._center;
     this._scale = 1;
+    this.draw();
   }
 
   clear(stopRender = true, resetTransform = true) {
@@ -309,7 +307,7 @@ export class Space {
     window.cancelAnimationFrame(this._animationHandle);
     this._animationHandle = null;
     lastFrameTime = 0;
-    this.frame();
+    this.draw();
   }
 
   origin(pos?: Vec) {
@@ -317,5 +315,6 @@ export class Space {
 
     this._ctx.transform(1, 0, 0, 1, 0, 0);
     this._translate = pos.clone();
+    this.draw();
   }
 }

@@ -36,6 +36,8 @@ export class Layer {
         if (this._fixed !== undefined) shape.fixed = this._fixed;
       }
     }
+
+    this.space.draw();
   }
 
   removeShapes(...shapes: Shape[]) {
@@ -47,11 +49,15 @@ export class Layer {
         this.shapes.splice(index, 1);
       }
     }
+
+    this.space.draw();
   }
 
   clear() {
     for (let shape of this.shapes) shape.destory();
     this.shapes = [];
+
+    this.space.draw();
   }
 
   bringUp(shape: Shape) {
@@ -59,6 +65,8 @@ export class Layer {
 
     if (index > -1 && index < this.shapes.length - 1)
       this.shapes.splice(index, 2, this.shapes[index + 1], this.shapes[index]);
+
+      this.space.draw();
   }
 
   bringTop(shape: Shape) {
@@ -68,6 +76,8 @@ export class Layer {
       this.shapes.splice(index, 1);
       this.shapes.push(shape);
     }
+
+    this.space.draw();
   }
 
   pushBack(shape: Shape) {
@@ -75,6 +85,8 @@ export class Layer {
 
     if (index > 0)
       this.shapes.splice(index - 1, 2, this.shapes[index], this.shapes[index - 1]);
+
+      this.space.draw();
   }
 
   sendBack(shape: Shape) {
@@ -84,6 +96,8 @@ export class Layer {
       this.shapes.splice(index, 1);
       this.shapes.unshift(shape);
     }
+
+    this.space.draw();
   }
 
   draw() {

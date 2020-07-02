@@ -26,4 +26,5 @@ export interface ISpace {
   scale: number;
   active: string;
   style: Style;
+  draw(): void;
 }

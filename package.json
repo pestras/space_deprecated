@@ -29,7 +29,7 @@
     "typescript": "^3.4.3"
   },
   "peerDependencies": {
-    "rxjs": "^6.6.0"
+    "rxjs": "^6.5.5"
   },
   "dependencies": {
     "@pestras/toolbox": "^1.1.7"

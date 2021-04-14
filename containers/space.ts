@@ -221,7 +221,7 @@ export class Space {
 
     this._canvas.addEventListener('mousewheel', (e: any) => {
       e.preventDefault();
-      let scale = this._scale + (e.wheelDeltaY * 0.01);
+      let scale = this._scale + ((e.wheelDeltaY / Math.abs(e.wheelDeltaY)) * 0.01);
       this._scale = scale <= 0.1 ? 0.1 : (scale >= 5 ? 5 : scale);
       this._viewSize = this._size.divide(this._scale);
       this._viewCenter = this._translate.center(this._viewSize);

@@ -1,6 +1,7 @@
 import { Layer } from './layer';
 import { Style } from '../space.interface';
 import { Vec, Size } from '../geometery/measure';
+import { throttle } from '../util';
 
 export type FrameRate = 60 | 30 | 20 | 10 | 6 | 5 | 4 | 3 | 2 | 1;
 
@@ -219,15 +220,16 @@ export class Space {
       this._mousedownDir = null;
     });
 
-    this._canvas.addEventListener('mousewheel', (e: any) => {
+    this._canvas.addEventListener('mousewheel', throttle((e: any) => {
       e.preventDefault();
-      let scale = this._scale + (Math.ceil(e.wheelDeltaY / 10) * 0.01);
+      let dir = e.wheelDeltaY / Math.abs(e.wheelDeltaY);
+      let scale = this._scale + (Math.ceil(Math.abs(e.wheelDeltaY) / 10) * 0.01 * dir);
       this._scale = scale <= 0.1 ? 0.1 : (scale >= 5 ? 5 : scale);
       this._viewSize = this._size.divide(this._scale);
       this._viewCenter = this._translate.center(this._viewSize);
       this.draw();
       return false;
-    }, false);
+    }, 100), false);
 
     window.addEventListener('resize', () => {
       this.resize();

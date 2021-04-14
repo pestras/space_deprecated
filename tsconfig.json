@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "moduleResolution": "node",
-    "module": "ES6",
+    "module": "eS6",
     "target": "es6",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "removeComments": true,
     "strictNullChecks": false,
     "experimentalDecorators": true,
